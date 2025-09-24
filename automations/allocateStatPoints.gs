@@ -16,7 +16,7 @@ function allocateStatPoints(unusedStatPoints, lvl) {
   }
 
   // if unused stat points & user at least lvl 10
-  if (unusedStatPoints > 0 && lvl >= 10 && !getUser().preferences.disableClasses) {
+  if (unusedStatPoints > 0 && lvl >= 10 && !getUser().preferences.disableClasses && getUser().flags.classSelected) {
 
     console.log("Allocating " + unusedStatPoints + " unused stat points to " + STAT_TO_ALLOCATE);
 
