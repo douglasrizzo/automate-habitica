@@ -3,17 +3,18 @@
  *
  * Priority-based pet hatching and feeding strategy.
  *
- * Hatching priority:
- * - First hatches non-wacky pets, sorted alphabetically by species
- * - Then hatches wacky pets, sorted alphabetically by species
- * - No strict requirements - hatches whenever eggs and potions are available
+ * Hatching priority (in order):
+ * 1. Standard pets (basic colors)
+ * 2. Standard pets (magic/premium potions)
+ * 3. Quest pets (basic colors)
+ * 4. Wacky pets
+ * Within each group, sorted alphabetically by species.
  *
  * Feeding priority (in order):
  * 1. Standard pets (basic colors) - favorite food only (+5 per feeding)
  * 2. Quest pets (basic colors) - favorite food only (+5 per feeding)
  * 3. Magic potion pets (premium colors) - any leftover food (+2 per feeding)
  * 4. Wacky pets - skipped (cannot become mounts)
- *
  * Within each group, prioritizes pets closest to becoming mounts.
  *
  * Run this function whenever the player gets eggs, hatching potions,
@@ -29,11 +30,7 @@ function hatchFeedPetsPriority() {
   let contentData = getContent();
   let petLists = getPetLists();
   let basicColors = getBasicColors();
-
-  // build pet category sets for classification
-  let standardPetSet = new Set(Object.keys(contentData.pets));
-  let questPetSet = new Set(Object.keys(contentData.questPets));
-  let premiumPetSet = new Set(Object.keys(contentData.premiumPets));
+  let { standardPetSet, questPetSet, premiumPetSet } = getPetCategorySets();
 
   // get user data
   let userData = getUser(true);
@@ -65,32 +62,65 @@ function hatchFeedPetsPriority() {
     // check if we have egg and potion
     if ((eggsOwned[species] || 0) > 0 && (potionsOwned[color] || 0) > 0) {
       let isWacky = petLists.wackyPets.includes(pet);
+      let isStandard = standardPetSet.has(pet);
+      let isQuest = questPetSet.has(pet);
+      let isBasicColor = basicColors.includes(color);
+
+      // determine hatching priority group (lower = higher priority)
+      let priorityGroup;
+      if (isStandard && isBasicColor) {
+        priorityGroup = 1; // Standard pets, basic colors
+      } else if (isStandard && !isBasicColor) {
+        priorityGroup = 2; // Standard pets, magic potions
+      } else if (isQuest) {
+        priorityGroup = 3; // Quest pets
+      } else if (isWacky) {
+        priorityGroup = 4; // Wacky pets
+      } else {
+        priorityGroup = 5; // Premium pets (shouldn't happen often)
+      }
+
       petsToHatch.push({
         pet: pet,
         species: species,
         color: color,
-        isWacky: isWacky,
+        priorityGroup: priorityGroup,
       });
     }
   }
 
-  // sort: non-wacky first (alphabetically by species), then wacky (alphabetically by species)
+  // sort by priority group, then alphabetically by species within each group
   petsToHatch.sort((a, b) => {
-    // non-wacky comes before wacky
-    if (a.isWacky !== b.isWacky) {
-      return a.isWacky ? 1 : -1;
+    // sort by priority group first
+    if (a.priorityGroup !== b.priorityGroup) {
+      return a.priorityGroup - b.priorityGroup;
     }
-    // alphabetically by species
+    // alphabetically by species within the same group
     return a.species.localeCompare(b.species);
   });
 
   // hatch pets in priority order
+  let currentPriorityGroup = 0;
+  let priorityGroupNames = {
+    1: "standard pets (basic colors)",
+    2: "standard pets (magic potions)",
+    3: "quest pets",
+    4: "wacky pets",
+    5: "premium pets",
+  };
+
   for (let hatchInfo of petsToHatch) {
-    let { pet, species, color } = hatchInfo;
+    let { pet, species, color, priorityGroup } = hatchInfo;
 
     // double-check we still have resources (they get consumed as we hatch)
     if ((eggsOwned[species] || 0) <= 0 || (potionsOwned[color] || 0) <= 0) {
       continue;
+    }
+
+    // log when entering a new priority group
+    if (priorityGroup !== currentPriorityGroup) {
+      currentPriorityGroup = priorityGroup;
+      console.log("Hatching " + priorityGroupNames[priorityGroup] + "...");
     }
 
     hatchPet(species, color);
