@@ -21,6 +21,7 @@ const AUTO_INVITE_GOLD_QUESTS = false;
 const AUTO_INVITE_UNLOCKABLE_QUESTS = false;
 const AUTO_INVITE_PET_QUESTS = false;
 const AUTO_INVITE_HOURGLASS_QUESTS = false;
+const QUEST_INVITE_MODE = "priority"; // "random" or "priority" (priority selects quest with lowest party completion %)
 const PM_WHEN_OUT_OF_QUEST_SCROLLS = true;
 
 const NOTIFY_ON_QUEST_END = true;
@@ -210,9 +211,26 @@ function validateConstants() {
     valid = false;
   }
 
-  if (AUTO_INVITE_GOLD_QUESTS === true || AUTO_INVITE_UNLOCKABLE_QUESTS === true || AUTO_INVITE_PET_QUESTS === true || AUTO_INVITE_HOURGLASS_QUESTS === true) {
-    if (PM_WHEN_OUT_OF_QUEST_SCROLLS !== true && PM_WHEN_OUT_OF_QUEST_SCROLLS !== false) {
-      console.log("ERROR: PM_WHEN_OUT_OF_QUEST_SCROLLS must equal either true or false.\n\neg. const PM_WHEN_OUT_OF_QUEST_SCROLLS = true;\n    const PM_WHEN_OUT_OF_QUEST_SCROLLS = false;");
+  if (
+    AUTO_INVITE_GOLD_QUESTS === true ||
+    AUTO_INVITE_UNLOCKABLE_QUESTS === true ||
+    AUTO_INVITE_PET_QUESTS === true ||
+    AUTO_INVITE_HOURGLASS_QUESTS === true
+  ) {
+    if (QUEST_INVITE_MODE !== "random" && QUEST_INVITE_MODE !== "priority") {
+      console.log(
+        'ERROR: QUEST_INVITE_MODE must equal either "random" or "priority".\n\neg. const QUEST_INVITE_MODE = "random";\n    const QUEST_INVITE_MODE = "priority";'
+      );
+      valid = false;
+    }
+
+    if (
+      PM_WHEN_OUT_OF_QUEST_SCROLLS !== true &&
+      PM_WHEN_OUT_OF_QUEST_SCROLLS !== false
+    ) {
+      console.log(
+        "ERROR: PM_WHEN_OUT_OF_QUEST_SCROLLS must equal either true or false.\n\neg. const PM_WHEN_OUT_OF_QUEST_SCROLLS = true;\n    const PM_WHEN_OUT_OF_QUEST_SCROLLS = false;"
+      );
       valid = false;
     }
   }

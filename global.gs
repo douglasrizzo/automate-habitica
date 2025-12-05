@@ -253,17 +253,26 @@ function processWebhook(webhookData) {
     if (NOTIFY_ON_QUEST_END === true && typeof webhookData.questKey !== "undefined") {
       scriptProperties.setProperty("notifyQuestEnded", webhookData.questKey);
     }
-    if (AUTO_INVITE_GOLD_QUESTS === true || AUTO_INVITE_UNLOCKABLE_QUESTS === true || AUTO_INVITE_PET_QUESTS === true || AUTO_INVITE_HOURGLASS_QUESTS === true) {
+    if (
+      AUTO_INVITE_GOLD_QUESTS === true ||
+      AUTO_INVITE_UNLOCKABLE_QUESTS === true ||
+      AUTO_INVITE_PET_QUESTS === true ||
+      AUTO_INVITE_HOURGLASS_QUESTS === true
+    ) {
+      let inviteFunction =
+        QUEST_INVITE_MODE === "priority"
+          ? "invitePriorityQuest"
+          : "inviteRandomQuest";
       for (let trigger of ScriptApp.getProjectTriggers()) {
-        if (trigger.getHandlerFunction() === "inviteRandomQuest") {
+        if (
+          trigger.getHandlerFunction() === "inviteRandomQuest" ||
+          trigger.getHandlerFunction() === "invitePriorityQuest"
+        ) {
           ScriptApp.deleteTrigger(trigger);
         }
       }
       let afterMs = Math.random() * 600000 + 300000;
-      ScriptApp.newTrigger("inviteRandomQuest")
-        .timeBased()
-        .after(afterMs)
-        .create();
+      ScriptApp.newTrigger(inviteFunction).timeBased().after(afterMs).create();
     }
     if (AUTO_PURCHASE_ARMOIRES === true) {
       scriptProperties.setProperty("purchaseArmoires", "true");
@@ -865,6 +874,212 @@ function getContent(updated) {
 }
 
 /**
+ * getQuestCompletionData()
+ *
+ * Calculates quest completion percentages for the party.
+ * Returns an array of quest objects with questKey and completionPercentage.
+ * Adapted from Quest Tracker by @bumbleshoot.
+ */
+function getQuestCompletionData() {
+  // if no party, party = user
+  let partyMembers;
+  if (typeof getMembers() === "undefined") {
+    partyMembers = [getUser()];
+  } else {
+    partyMembers = members;
+  }
+
+  // get # each egg & hatching potion owned/used for each member
+  for (let member of partyMembers) {
+    member.numEachEggOwnedUsed = Object.assign({}, member.items.eggs);
+    member.numEachPotionOwnedUsed = Object.assign(
+      {},
+      member.items.hatchingPotions
+    );
+    for (let [pet, amount] of Object.entries(member.items.pets)) {
+      if (amount > 0) {
+        // 5 = newly hatched pet, >5 = fed pet, -1 = mount but no pet
+        pet = pet.split("-");
+        let species = pet[0];
+        let color = pet[1];
+        if (member.numEachEggOwnedUsed.hasOwnProperty(species)) {
+          member.numEachEggOwnedUsed[species] =
+            member.numEachEggOwnedUsed[species] + 1;
+        } else {
+          member.numEachEggOwnedUsed[species] = 1;
+        }
+        if (member.numEachPotionOwnedUsed.hasOwnProperty(color)) {
+          member.numEachPotionOwnedUsed[color] =
+            member.numEachPotionOwnedUsed[color] + 1;
+        } else {
+          member.numEachPotionOwnedUsed[color] = 1;
+        }
+      }
+    }
+    for (let mount of Object.keys(member.items.mounts)) {
+      mount = mount.split("-");
+      let species = mount[0];
+      let color = mount[1];
+      if (member.numEachEggOwnedUsed.hasOwnProperty(species)) {
+        member.numEachEggOwnedUsed[species] =
+          member.numEachEggOwnedUsed[species] + 1;
+      } else {
+        member.numEachEggOwnedUsed[species] = 1;
+      }
+      if (member.numEachPotionOwnedUsed.hasOwnProperty(color)) {
+        member.numEachPotionOwnedUsed[color] =
+          member.numEachPotionOwnedUsed[color] + 1;
+      } else {
+        member.numEachPotionOwnedUsed[color] = 1;
+      }
+    }
+  }
+
+  // get lists of premium eggs, premium hatching potions & wacky hatching potions
+  let premiumEggs = [];
+  for (let egg of Object.values(getContent().questEggs)) {
+    premiumEggs.push(egg.key);
+  }
+  let premiumHatchingPotions = [];
+  for (let potion of Object.values(content.premiumHatchingPotions)) {
+    premiumHatchingPotions.push(potion.key);
+  }
+  let wackyHatchingPotions = [];
+  for (let potion of Object.values(content.wackyHatchingPotions)) {
+    wackyHatchingPotions.push(potion.key);
+  }
+
+  // calculate completion data for each quest
+  let questCompletionData = [];
+
+  for (let quest of Object.values(content.quests)) {
+    // if world boss, skip it
+    if (quest.category == "world") {
+      continue;
+    }
+
+    // get rewards
+    let rewards = [];
+    if (typeof quest.drop.items !== "undefined") {
+      for (let drop of quest.drop.items) {
+        let rewardName = drop.text;
+        let rewardType = "";
+
+        if (drop.type == "eggs" && premiumEggs.includes(drop.key)) {
+          rewardName = content.eggs[drop.key].text + " Egg";
+          rewardType = "egg";
+        } else if (
+          drop.type == "hatchingPotions" &&
+          premiumHatchingPotions.includes(drop.key)
+        ) {
+          rewardType = "hatchingPotion";
+        } else if (
+          drop.type == "hatchingPotions" &&
+          wackyHatchingPotions.includes(drop.key)
+        ) {
+          rewardType = "wackyPotion";
+        } else if (drop.type == "mounts") {
+          rewardType = "mount";
+        } else if (drop.type == "pets") {
+          rewardType = "pet";
+        } else if (drop.type == "gear") {
+          rewardType = "gear";
+        }
+
+        if (rewardType != "") {
+          let index = rewards.findIndex((reward) => reward.name == rewardName);
+          if (index == -1) {
+            rewards.push({
+              key: drop.key,
+              name: rewardName,
+              type: rewardType,
+              qty: 1,
+            });
+          } else {
+            rewards[index].qty++;
+          }
+        }
+      }
+    }
+
+    // get completions needed & completions (individual)
+    let neededIndividual;
+    let totalCompletions = 0;
+    let totalNeeded = 0;
+
+    if (rewards.length > 0 && rewards[0].type == "egg") {
+      neededIndividual = 20 / rewards[0].qty;
+      for (let member of partyMembers) {
+        if (typeof member.numEachEggOwnedUsed[rewards[0].key] === "undefined") {
+          member.numEachEggOwnedUsed[rewards[0].key] = 0;
+        }
+        let timesCompleted = Math.min(
+          member.numEachEggOwnedUsed[rewards[0].key] / rewards[0].qty,
+          neededIndividual
+        );
+        let completedCount = Math.floor(
+          (Math.ceil(neededIndividual) * timesCompleted) / neededIndividual
+        );
+        totalCompletions += completedCount;
+        totalNeeded += Math.ceil(neededIndividual);
+      }
+    } else if (
+      rewards.length > 0 &&
+      (rewards[0].type == "hatchingPotion" || rewards[0].type == "wackyPotion")
+    ) {
+      if (rewards[0].type == "hatchingPotion") {
+        neededIndividual = 18 / rewards[0].qty;
+      } else {
+        neededIndividual = 9 / rewards[0].qty;
+      }
+      for (let member of partyMembers) {
+        if (
+          typeof member.numEachPotionOwnedUsed[rewards[0].key] === "undefined"
+        ) {
+          member.numEachPotionOwnedUsed[rewards[0].key] = 0;
+        }
+        let timesCompleted = Math.min(
+          member.numEachPotionOwnedUsed[rewards[0].key] / rewards[0].qty,
+          neededIndividual
+        );
+        let completedCount = Math.floor(
+          (Math.ceil(neededIndividual) * timesCompleted) / neededIndividual
+        );
+        totalCompletions += completedCount;
+        totalNeeded += Math.ceil(neededIndividual);
+      }
+    } else {
+      neededIndividual = 1;
+      for (let member of partyMembers) {
+        let timesCompleted = 0;
+        for (let [questKey, completions] of Object.entries(
+          member.achievements.quests
+        )) {
+          if (questKey == quest.key) {
+            timesCompleted = Math.min(completions, neededIndividual);
+            break;
+          }
+        }
+        totalCompletions += timesCompleted;
+        totalNeeded += Math.ceil(neededIndividual);
+      }
+    }
+
+    // calculate completion percentage
+    let completionPercentage =
+      totalNeeded > 0 ? (totalCompletions / totalNeeded) * 100 : 0;
+
+    questCompletionData.push({
+      questKey: quest.key,
+      questName: quest.text,
+      completionPercentage: completionPercentage,
+    });
+  }
+
+  return questCompletionData;
+}
+
+/**
  * reenableWebhooks()
  * 
  * Checks the script's webhooks and re-enables any that have 
@@ -873,7 +1088,6 @@ function getContent(updated) {
  */
 let reenabling;
 function reenableWebhooks() {
-
   // for each Automate Habitica webhook
   for (let webhook of JSON.parse(fetch("https://habitica.com/api/v3/user/webhook", GET_PARAMS)).data) {
     if (webhook.url === WEB_APP_URL) {
