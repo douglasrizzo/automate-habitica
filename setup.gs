@@ -49,6 +49,7 @@ const AUTO_SELL_FOOD = false;
 const RESERVE_FOOD = 999;
 
 const AUTO_HATCH_FEED_PETS = false;
+const HATCH_FEED_MODE = "priority"; // "conservative" or "priority" (priority hatches/feeds without strict requirements)
 const ONLY_USE_DROP_FOOD = true;
 
 const HIDE_PARTY_NOTIFICATIONS = false;
@@ -322,6 +323,13 @@ function validateConstants() {
   }
 
   if (AUTO_HATCH_FEED_PETS === true) {
+    if (HATCH_FEED_MODE !== "conservative" && HATCH_FEED_MODE !== "priority") {
+      console.log(
+        'ERROR: HATCH_FEED_MODE must equal either "conservative" or "priority".\n\neg. const HATCH_FEED_MODE = "conservative";\n    const HATCH_FEED_MODE = "priority";'
+      );
+      valid = false;
+    }
+
     if (ONLY_USE_DROP_FOOD !== true && ONLY_USE_DROP_FOOD !== false) {
       console.log("ERROR: ONLY_USE_DROP_FOOD must equal either true or false.\n\neg. const ONLY_USE_DROP_FOOD = true;\n    const ONLY_USE_DROP_FOOD = false;");
       valid = false;

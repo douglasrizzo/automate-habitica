@@ -409,8 +409,16 @@ function processQueue() {
           scriptProperties.deleteProperty("sellExtraEggs");
           continue;
         }
-        if (properties.hasOwnProperty("hatchFeedPets") && !webhook && !installing) {
+        if (
+          properties.hasOwnProperty("hatchFeedPets") &&
+          !webhook &&
+          !installing
+        ) {
+          if (HATCH_FEED_MODE === "priority") {
+            hatchFeedPetsPriority();
+          } else {
           hatchFeedPets();
+          }
           scriptProperties.deleteProperty("hatchFeedPets");
           continue;
         }
@@ -864,6 +872,158 @@ function getContent(updated) {
   return content;
 }
 
+// ==================== PET UTILITY FUNCTIONS ====================
+
+/**
+ * getPetLists()
+ *
+ * Returns categorized lists of all hatchable pets from content data.
+ * Used by both hatchFeedPets strategies.
+ */
+function getPetLists() {
+  let contentData = getContent();
+  let nonWackyNonSpecialPets = Object.keys(contentData.pets)
+    .concat(Object.keys(contentData.premiumPets))
+    .concat(Object.keys(contentData.questPets));
+  let wackyPets = Object.keys(contentData.wackyPets);
+  let allNonSpecialPets = nonWackyNonSpecialPets.concat(wackyPets);
+
+  return {
+    nonWackyNonSpecialPets: nonWackyNonSpecialPets,
+    wackyPets: wackyPets,
+    allNonSpecialPets: allNonSpecialPets,
+  };
+}
+
+/**
+ * getBasicColors()
+ *
+ * Returns an array of basic/drop hatching potion colors.
+ * These colors have favorite foods.
+ */
+function getBasicColors() {
+  return Object.keys(getContent().dropHatchingPotions);
+}
+
+/**
+ * getOwnedPets(allNonSpecialPets)
+ *
+ * Returns an object of owned non-special pets with their fed amounts.
+ * Pet amount meanings: 5 = newly hatched, >5 = fed, -1 = mount but no pet
+ */
+function getOwnedPets(allNonSpecialPets) {
+  let petsOwned = {};
+  for (let [pet, amount] of Object.entries(getUser().items.pets)) {
+    if (amount > 0 && allNonSpecialPets.includes(pet)) {
+      petsOwned[pet] = amount;
+    }
+  }
+  return petsOwned;
+}
+
+/**
+ * getOwnedMounts(allNonSpecialPets)
+ *
+ * Returns an object of owned non-special mounts.
+ */
+function getOwnedMounts(allNonSpecialPets) {
+  let mountsOwned = {};
+  for (let [mount, owned] of Object.entries(getUser().items.mounts)) {
+    if (owned && allNonSpecialPets.includes(mount)) {
+      mountsOwned[mount] = true;
+    }
+  }
+  return mountsOwned;
+}
+
+/**
+ * getUsableFood()
+ *
+ * Returns an object of usable food based on ONLY_USE_DROP_FOOD setting.
+ * Excludes Saddles and food with 0 quantity.
+ */
+function getUsableFood() {
+  let foodOwned = {};
+  let contentData = getContent();
+  for (let [food, amount] of Object.entries(getUser().items.food)) {
+    if (food !== "Saddle" && amount > 0) {
+      if (ONLY_USE_DROP_FOOD !== true || contentData.food[food].canDrop) {
+        foodOwned[food] = amount;
+      }
+    }
+  }
+  return foodOwned;
+}
+
+/**
+ * makeReadable(name)
+ *
+ * Converts CamelCase names to "Camel Case" format for display.
+ */
+function makeReadable(name) {
+  return name.replaceAll(/(?<!^)([A-Z])/g, " $1");
+}
+
+/**
+ * hatchPet(species, color)
+ *
+ * Hatches a pet via the Habitica API.
+ * Logs the action and returns the API response.
+ */
+function hatchPet(species, color) {
+  let speciesReadable = makeReadable(species);
+  let colorReadable = makeReadable(color);
+  console.log("Hatching " + colorReadable + " " + speciesReadable);
+  return fetch(
+    "https://habitica.com/api/v3/user/hatch/" + species + "/" + color,
+    POST_PARAMS
+  );
+}
+
+/**
+ * feedPet(pet, food, amount, speciesReadable, colorReadable)
+ *
+ * Feeds a pet via the Habitica API.
+ * Logs the action and returns the API response.
+ */
+function feedPet(pet, food, amount, speciesReadable, colorReadable) {
+  console.log(
+    "Feeding " +
+      colorReadable +
+      " " +
+      speciesReadable +
+      " " +
+      amount +
+      " " +
+      food
+  );
+  return fetch(
+    "https://habitica.com/api/v3/user/feed/" +
+      pet +
+      "/" +
+      food +
+      "?amount=" +
+      amount,
+    POST_PARAMS
+  );
+}
+
+/**
+ * getFavoriteFoods(color)
+ *
+ * Returns an array of food keys that are favorites for the given color.
+ */
+function getFavoriteFoods(color) {
+  let favorites = [];
+  let contentData = getContent();
+  for (let [foodKey, foodData] of Object.entries(contentData.food)) {
+    if (foodKey !== "Saddle" && foodData.target === color) {
+      favorites.push(foodKey);
+    }
+  }
+  return favorites;
+}
+
 /**
  * reenableWebhooks()
  * 
@@ -873,7 +1033,6 @@ function getContent(updated) {
  */
 let reenabling;
 function reenableWebhooks() {
-
   // for each Automate Habitica webhook
   for (let webhook of JSON.parse(fetch("https://habitica.com/api/v3/user/webhook", GET_PARAMS)).data) {
     if (webhook.url === WEB_APP_URL) {
