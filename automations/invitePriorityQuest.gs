@@ -73,6 +73,31 @@ function invitePriorityQuest() {
       }
     }
 
+    // log all quests with completion percentages (for debugging)
+    let userQuestScrolls = new Set(
+      Object.keys(getUser().items.quests).filter(
+        (q) => getUser().items.quests[q] > 0
+      )
+    );
+
+    // sort all quest completion data by percentage
+    questCompletionData.sort(
+      (a, b) => a.completionPercentage - b.completionPercentage
+    );
+
+    console.log("=== Quest Completion Data (sorted by %) ===");
+    for (let quest of questCompletionData) {
+      let hasScroll = userQuestScrolls.has(quest.questKey) ? " *" : "";
+      console.log(
+        Math.floor(quest.completionPercentage).toString().padStart(3) +
+          "% - " +
+          quest.questName +
+          hasScroll
+      );
+    }
+    console.log("(* = you have a scroll for this quest)");
+    console.log("==========================================");
+
     // if list contains scrolls
     if (availableQuests.length > 0) {
       // sort by completion percentage (lowest first)
@@ -84,7 +109,7 @@ function invitePriorityQuest() {
       let selectedQuest = availableQuests[0];
 
       console.log(
-        "Inviting party to " +
+        "Selected: " +
           selectedQuest.questName +
           " (completion: " +
           Math.floor(selectedQuest.completionPercentage) +
