@@ -33,7 +33,7 @@ function onTrigger() {
   } catch (e) {
     MailApp.sendEmail(
       Session.getEffectiveUser().getEmail(),
-      DriveApp.getFileById(ScriptApp.getScriptId()).getName() + " failed!",
+      PROJECT_NAME + " failed!",
       e.stack
     );
     console.error(e.stack);
@@ -95,7 +95,7 @@ function doPost(e) {
     if (!e.stack.includes("Address unavailable")) {
       MailApp.sendEmail(
         Session.getEffectiveUser().getEmail(),
-        DriveApp.getFileById(ScriptApp.getScriptId()).getName() + " failed!",
+        PROJECT_NAME + " failed!",
         e.stack
       );
       console.error(e.stack);

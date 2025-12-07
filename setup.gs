@@ -8,6 +8,7 @@
 const USER_ID = "";
 const API_TOKEN = "";
 const WEB_APP_URL = "";
+const PROJECT_NAME = "Automate Habitica";
 
 const AUTO_CRON = false; // true or false
 
@@ -511,7 +512,7 @@ function createWebhooks(groupChatReceived) {
     for (let webhook of webhooks) {
       webhook = Object.assign({
         "url": WEB_APP_URL,
-        "label": DriveApp.getFileById(ScriptApp.getScriptId()).getName()
+        "label": PROJECT_NAME
       }, webhook);
       webhook = Object.assign({
         "contentType": "application/json",
