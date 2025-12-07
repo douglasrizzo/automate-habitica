@@ -76,7 +76,7 @@ function inviteRandomQuest() {
   } catch (e) {
     MailApp.sendEmail(
       Session.getEffectiveUser().getEmail(),
-      DriveApp.getFileById(ScriptApp.getScriptId()).getName() + " failed!",
+      PROJECT_NAME + " failed!",
       e.stack
     );
     console.error(e.stack);
