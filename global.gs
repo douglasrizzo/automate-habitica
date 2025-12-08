@@ -259,7 +259,7 @@ function processWebhook(webhookData) {
     }
     if (
       AUTO_HATCH_FEED_PETS === true &&
-      (webhookData.dropType === "undefined" ||
+      (typeof webhookData.dropType === "undefined" ||
         ["Egg", "HatchingPotion", "Food", "All"].includes(webhookData.dropType))
     ) {
       scriptProperties.setProperty("hatchFeedPets", "true");
@@ -744,9 +744,9 @@ function fetch(url, params) {
     } else if (response.getResponseCode() < 500 || i >= 2) {
       throw new Error(
         "Request failed for https://habitica.com returned code " +
-          response.getResponseCode() +
-          ". Truncated server response: " +
-          response.getContentText()
+        response.getResponseCode() +
+        ". Truncated server response: " +
+        response.getContentText()
       );
     }
   }
