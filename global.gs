@@ -2,7 +2,7 @@ const PARAMS = {
   headers: {
     "x-api-user": USER_ID,
     "x-api-key": API_TOKEN,
-    "x-client": "35c3fb6f-fb98-4bc3-b57a-ac01137d0847-AutomateHabitica",
+    "x-client": "c4de46a5-e9ba-4d8c-a28f-7f5a3d3d218b-AutomateHabitica+",
   },
   muteHttpExceptions: true,
 };
@@ -697,8 +697,8 @@ function fetch(url, params) {
       Utilities.sleep(
         Math.max(
           Math.max(waitUntil.getTime() - new Date().getTime(), 0) /
-            (Number(rateLimitRemaining) + 1) -
-            apiResponseTime,
+          (Number(rateLimitRemaining) + 1) -
+          apiResponseTime,
           0
         )
       );
@@ -1155,21 +1155,21 @@ function hatchPet(species, color) {
 function feedPet(pet, food, amount, speciesReadable, colorReadable) {
   console.log(
     "Feeding " +
-      colorReadable +
-      " " +
-      speciesReadable +
-      " " +
-      amount +
-      " " +
-      food
+    colorReadable +
+    " " +
+    speciesReadable +
+    " " +
+    amount +
+    " " +
+    food
   );
   return fetch(
     "https://habitica.com/api/v3/user/feed/" +
-      pet +
-      "/" +
-      food +
-      "?amount=" +
-      amount,
+    pet +
+    "/" +
+    food +
+    "?amount=" +
+    amount,
     POST_PARAMS
   );
 }

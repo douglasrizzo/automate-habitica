@@ -1,6 +1,10 @@
 ## Summary
 
-Automate Habitica is a suite of automation tools for Habitica, allowing you to focus on your tasks instead of managing gameplay. Each tool can be enabled, disabled, and configured to suit your needs.
+**Automate Habitica+** is a fork of [Automate Habitica](https://github.com/bumbleshoot/automate-habitica) by [@bumbleshoot](https://github.com/bumbleshoot).
+
+This fork extends the original with additional features and improvements while maintaining full compatibility with the original functionality. All credit for the original concept and implementation goes to bumbleshoot.
+
+It is a suite of automation tools for Habitica, allowing you to focus on your tasks instead of managing gameplay. Each tool can be enabled, disabled, and configured to suit your needs.
 
 ## Features
 
@@ -154,7 +158,7 @@ Hides [notifications](https://habitica.fandom.com/wiki/Notifications?so=search#P
 
 If you are in a party that buffs a lot, it is recommended that you turn `HIDE_PARTY_NOTIFICATIONS` off, because the script needs to make 2 API calls to hide each party notification. API calls take time, so if your party is buffing continuously, you may see party notifications appear & disappear rapidly. Also, the Habitica API only allows a certain number of API calls per minute (better to use those API calls for buffs if you have lots of mana!)
 
-**_Note that due to [limitations with Google Apps Script](https://issuetracker.google.com/issues/231411987), Automate Habitica may take up to 2 mins to hide party notifications if `HIDE_PARTY_NOTIFICATIONS` is set to `true`. I can fix this if the issue with Google Apps Script is fixed (see link), or if Automate Habitica is moved to a different platform. I would like to move Automate Habitica to a different platform someday, but it is a large undertaking that I don't have time for right now._**
+**_Note that due to [limitations with Google Apps Script](https://issuetracker.google.com/issues/231411987), Automate Habitica+ may take up to 2 mins to hide party notifications if `HIDE_PARTY_NOTIFICATIONS` is set to `true`._**
 
 ## Before Installing
 
@@ -167,7 +171,7 @@ It is highly recommended that you use a desktop computer for this, as some of th
 5. In the main menu on the left, click on "Triggers" (looks like an alarm clock).
 6. Hover your mouse over each trigger in the list, click the three dots on the right, and click "Delete trigger".
 7. If your script had no deployments, you can skip to the last step. If you clicked the "Archive" button, continue to the next step.
-8. Click [here](https://habitica.com/user/settings/api) to open your API Settings. Highlight and copy your User ID (it looks something like this: `35c3fb6f-fb98-4bc3-b57a-ac01137d0847`).
+8. Click [here](https://habitica.com/user/settings/api) to open your API Settings. Highlight and copy your User ID (it looks something like this: `c4de46a5-e9ba-4d8c-a28f-7f5a3d3d218b`).
 9. Click [here](https://robwhitaker.com/habitica-webhook-editor/) to open the Habitica Webhook Editor. Paste your User ID in the "User ID" box.
 10. On the same page where you copied your User ID, click the "Show API Token" button, and copy your API Token.
 11. In the Habitica Webhook Editor, paste your API Token in the "API Token" box, then click "Login".
@@ -178,15 +182,15 @@ It is highly recommended that you use a desktop computer for this, as some of th
 
 It is highly recommended that you use a desktop computer for this, as some of the steps don't work well on mobile. Make sure you read the [Before Installing](#before-installing) section above, and follow the instructions there if applicable! Make sure you only install one copy of Automate Habitica per Google account, otherwise you will exceed the [limit for URL Fetch calls](https://developers.google.com/apps-script/guides/services/quotas) and the script will not work.
 
-1. Click [here](https://script.google.com/home/projects/1y5jBYAWqi0Lrd5Oo40q9GYu8KIltzas2hxUOS3ecUUjZP35L-EP3j28N/) to go to the Automate Habitica script. If you're not signed into your Google account, click on "Start Scripting", then sign in, then click on the script link again.
+1. Click [here](https://script.google.com/home/projects/14GDS_AQCgXyNK0-VEJlfhvIMI-h4GpnDnYm_3GNUxzOb-LG63NhhWtHi/) to go to the Automate Habitica script. If you're not signed into your Google account, click on "Start Scripting", then sign in, then click on the script link again.
 2. Click the "Make a copy" button (looks like two pages of paper).
-3. At the top of your screen, click on "Copy of Automate Habitica". Rename it "Automate Habitica" and click the "Rename" button.
-4. Click [here](https://habitica.com/user/settings/api) to open your API Settings. Highlight and copy your User ID (it looks something like this: `35c3fb6f-fb98-4bc3-b57a-ac01137d0847`). In the Automate Habitica script, paste your User ID between the quotations where it says `const USER_ID = "";`. It should now look something like this: `const USER_ID = "35c3fb6f-fb98-4bc3-b57a-ac01137d0847";`
-5. On the same page where you copied your User ID, click the "Show API Token" button, and copy your API Token. In the Automate Habitica script, paste your API Token between the quotations where it says `const API_TOKEN = "";`. It should now look something like this: `const API_TOKEN = "35c3fb6f-fb98-4bc3-b57a-ac01137d0847";`
+3. At the top of your screen, click on "Copy of Automate Habitica+". Rename it "Automate Habitica+" and click the "Rename" button.
+4. Click [here](https://habitica.com/user/settings/api) to open your API Settings. Highlight and copy your User ID (it looks something like this: `c4de46a5-e9ba-4d8c-a28f-7f5a3d3d218b`). In the Automate Habitica+ script, paste your User ID between the quotations where it says `const USER_ID = "";`. It should now look something like this: `const USER_ID = "c4de46a5-e9ba-4d8c-a28f-7f5a3d3d218b";`
+5. On the same page where you copied your User ID, click the "Show API Token" button, and copy your API Token. In the Automate Habitica+ script, paste your API Token between the quotations where it says `const API_TOKEN = "";`. It should now look something like this: `const API_TOKEN = "c4de46a5-e9ba-4d8c-a28f-7f5a3d3d218b";`
 6. Skip the line that says `const WEB_APP_URL = "";`. We will come back to that later. Edit all the other settings (`const`s) in the script to your liking. Only edit in between the `=` and the `;`. If there are quotations `""` in between the `=` and the `;`, just type in between the quotations.
 7. Click the "Save project" button near the top of the page (looks like a floppy disk).
 8. Click the blue "Deploy" button near the top of the page, then click "New deployment", then click the "Deploy" button.
-9. (If this is your first time deploying) Click the "Review permissions" button and select your Google account. Click on "Advanced", then "Go to Automate Habitica (unsafe)". (Don't worry, it is safe!) Then click "Continue", then "Allow".
+9. (If this is your first time deploying) Click the "Review permissions" button and select your Google account. Click on "Advanced", then "Go to Automate Habitica+ (unsafe)". (Don't worry, it is safe!) Then click "Continue", then "Allow".
 10. Under "Web app", click the "Copy" button to copy the Web App URL. Then click the "Done" button.
 11. Paste your Web App URL inside the quotations where it says `const WEB_APP_URL = "";`.
 12. Click the drop-down menu to the right of the "Debug" button, near the top of the page. Select "install" from the drop-down.
@@ -199,7 +203,7 @@ You're all done! If you need to change the settings or uninstall the script at s
 It is highly recommended that you use a desktop computer for this, as some of the steps don't work well on mobile.
 
 1. [Click here](https://script.google.com/home) to see a list of your scripts. If you're not already signed into your Google account, click the "Start Scripting" button and sign in. Then click on "My Projects" in the main menu on the left.
-2. Click on "Automate Habitica".
+2. Click on "Automate Habitica+".
 3. Edit the settings (`const`s) to your liking.
 4. Click the "Save project" button near the top of the page (looks like a floppy disk).
 5. Click the blue "Deploy" button near the top of the page, then click "Manage deployments".
@@ -213,7 +217,7 @@ It is highly recommended that you use a desktop computer for this, as some of th
 It is highly recommended that you use a desktop computer for this, as some of the steps don't work well on mobile.
 
 1. [Click here](https://script.google.com/home) to see a list of your scripts. If you're not already signed into your Google account, click the "Start Scripting" button and sign in. Then click on "My Projects" in the main menu on the left.
-2. Click on "Automate Habitica".
+2. Click on "Automate Habitica+".
 3. Click the drop-down menu to the right of the "Debug" button, near the top of the page. Select "uninstall" from the drop-down.
 4. Click the "Run" button to the left of the "Debug" button. Wait for it to say "Execution completed".
 5. Click the blue "Deploy" button near the top of the page, then click "Manage deployments".
@@ -231,7 +235,13 @@ It is highly recommended that you use a desktop computer for this, as some of th
 
 ## Contact
 
+### Automate Habitica+ (this fork)
+
+🐞 Report a bug: [https://github.com/douglasrizzo/automate-habitica/issues](https://github.com/douglasrizzo/automate-habitica/issues)
+
+### Original Automate Habitica
+
 ❔ Questions: [https://github.com/bumbleshoot/automate-habitica/discussions/categories/q-a](https://github.com/bumbleshoot/automate-habitica/discussions/categories/q-a)  
 💡 Suggestions: [https://github.com/bumbleshoot/automate-habitica/discussions/categories/suggestions](https://github.com/bumbleshoot/automate-habitica/discussions/categories/suggestions)  
 🐞 Report a bug: [https://github.com/bumbleshoot/automate-habitica/issues](https://github.com/bumbleshoot/automate-habitica/issues)  
-💗 Donate: [https://github.com/sponsors/bumbleshoot](https://github.com/sponsors/bumbleshoot)
+💗 Donate to @bumbleshoot: [https://github.com/sponsors/bumbleshoot](https://github.com/sponsors/bumbleshoot)

@@ -1,14 +1,16 @@
 /**
- * Automate Habitica v1.0.0 by @bumbleshoot
+ * Automate Habitica+ v1.0.0 by @tetamusha
+ * a fork of Automate Habitica v1.0.0 by @bumbleshoot
  *
- * See GitHub page for info & setup instructions:
+ * See GitHub pages for info & setup instructions:
+ * https://github.com/douglasrizzo/automate-habitica
  * https://github.com/bumbleshoot/automate-habitica
  */
 
 const USER_ID = "";
 const API_TOKEN = "";
 const WEB_APP_URL = "";
-const PROJECT_NAME = "Automate Habitica";
+const PROJECT_NAME = "Automate Habitica+";
 
 const AUTO_CRON = false; // true or false
 
