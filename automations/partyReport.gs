@@ -101,11 +101,15 @@ function generateQuestRecommendationsMessage(partyMembers, contentData) {
   let randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
 
   let lines = [];
-  lines.push("## " + randomEmoji + " **Automate Habitica+ - Recommended Quests**");
+  lines.push(
+    "## " + randomEmoji + " **Automate Habitica+ - Quests with Lowest Completion %**"
+  );
   lines.push("");
   lines.push(
     "[How completion % is calculated](https://github.com/douglasrizzo/automate-habitica#quest-completion-percentage)"
   );
+  lines.push("");
+  lines.push("Player names = up to 3 random party members with a scroll.");
   lines.push("");
 
   for (let quest of recommendedQuests) {
