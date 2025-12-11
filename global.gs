@@ -187,6 +187,9 @@ function processTrigger() {
   if (FORCE_START_QUESTS === true) {
     scriptProperties.setProperty("forceStartQuest", "true");
   }
+  if (AUTO_PARTY_REPORT === true) {
+    scriptProperties.setProperty("partyReport", "true");
+  }
 
   // in case GAS execution time limit was reached
   if (AUTO_PURCHASE_ARMOIRES === true) {
@@ -509,6 +512,11 @@ function processQueue() {
             purchaseArmoires(Number(gold));
           }
           scriptProperties.deleteProperty("purchaseArmoires");
+          continue;
+        }
+        if (properties.hasOwnProperty("partyReport") && !webhook && !installing) {
+          partyReport();
+          scriptProperties.deleteProperty("partyReport");
           continue;
         }
         break;

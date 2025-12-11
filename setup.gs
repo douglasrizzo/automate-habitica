@@ -56,6 +56,10 @@ const AUTO_HATCH_FEED_PETS = false;
 const HATCH_FEED_MODE = "priority"; // "conservative" or "priority" (priority hatches/feeds without strict requirements)
 const ONLY_USE_DROP_FOOD = true;
 
+const AUTO_PARTY_REPORT = false; // send periodic quest recommendations to party chat (party leaders only)
+const PARTY_REPORT_INTERVAL_DAYS = 7; // how often to send the party report (in days)
+const PARTY_REPORT_QUEST_COUNT = 30; // number of quests to list in the report
+
 const HIDE_PARTY_NOTIFICATIONS = false;
 const HIDE_ALL_GUILD_NOTIFICATIONS = false;
 const HIDE_NOTIFICATIONS_FROM_SPECIFIC_GUILDS = [ // only used if HIDE_ALL_GUILD_NOTIFICATIONS is false
@@ -353,6 +357,28 @@ function validateConstants() {
 
     if (ONLY_USE_DROP_FOOD !== true && ONLY_USE_DROP_FOOD !== false) {
       console.log("ERROR: ONLY_USE_DROP_FOOD must equal either true or false.\n\neg. const ONLY_USE_DROP_FOOD = true;\n    const ONLY_USE_DROP_FOOD = false;");
+      valid = false;
+    }
+  }
+
+  if (AUTO_PARTY_REPORT !== true && AUTO_PARTY_REPORT !== false) {
+    console.log("ERROR: AUTO_PARTY_REPORT must equal either true or false.\n\neg. const AUTO_PARTY_REPORT = true;\n    const AUTO_PARTY_REPORT = false;");
+    valid = false;
+  }
+
+  if (AUTO_PARTY_REPORT === true) {
+    if (typeof getParty() === "undefined" || party.leader.id !== USER_ID) {
+      console.log("ERROR: AUTO_PARTY_REPORT can only be run by party leaders.");
+      valid = false;
+    }
+
+    if (typeof PARTY_REPORT_INTERVAL_DAYS !== "number" || !Number.isInteger(PARTY_REPORT_INTERVAL_DAYS) || PARTY_REPORT_INTERVAL_DAYS < 1) {
+      console.log("ERROR: PARTY_REPORT_INTERVAL_DAYS must be a whole number greater than 0.\n\neg. const PARTY_REPORT_INTERVAL_DAYS = 7;\n    const PARTY_REPORT_INTERVAL_DAYS = 14;");
+      valid = false;
+    }
+
+    if (typeof PARTY_REPORT_QUEST_COUNT !== "number" || !Number.isInteger(PARTY_REPORT_QUEST_COUNT) || PARTY_REPORT_QUEST_COUNT < 1) {
+      console.log("ERROR: PARTY_REPORT_QUEST_COUNT must be a whole number greater than 0.\n\neg. const PARTY_REPORT_QUEST_COUNT = 10;\n    const PARTY_REPORT_QUEST_COUNT = 30;");
       valid = false;
     }
   }

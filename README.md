@@ -42,13 +42,22 @@ The `QUEST_INVITE_MODE` setting controls how the script chooses which quest to i
 
 **How Priority Mode Works:**
 
-The priority mode calculates a completion percentage for each quest based on your party members' progress:
+The priority mode uses the [Quest Completion Percentage](#quest-completion-percentage) calculation to determine which quest to invite. The quest with the lowest overall party completion percentage is selected first, ensuring your party focuses on quests where progress is most needed.
 
-- For **pet quests** (egg rewards): Tracks how many eggs each member has collected toward the 20 needed for all pets/mounts
-- For **hatching potion quests**: Tracks potion collection progress (18 needed for standard, 9 for wacky)
-- For **other quests**: Tracks how many times each member has completed the quest
+### Party Report
 
-The quest with the lowest overall party completion percentage is selected first, ensuring your party focuses on quests where progress is most needed.
+Periodically sends a message to your [party](https://habitica.fandom.com/wiki/Party) chat with recommended [quests](https://habitica.fandom.com/wiki/Quests) sorted by [completion percentage](#quest-completion-percentage) (lowest first). This helps your party coordinate which quests to focus on.
+
+The message includes:
+
+- Up to `PARTY_REPORT_QUEST_COUNT` quests with the lowest completion percentage
+- For each quest, up to 3 random party members who have scrolls for that quest
+
+Configure with:
+
+- `AUTO_PARTY_REPORT` - Enable/disable the party report
+- `PARTY_REPORT_INTERVAL_DAYS` - How often to send the report (in days)
+- `PARTY_REPORT_QUEST_COUNT` - Number of quests to include in the report
 
 ### Notify On Quest End
 
@@ -159,6 +168,36 @@ Hides [notifications](https://habitica.fandom.com/wiki/Notifications?so=search#P
 If you are in a party that buffs a lot, it is recommended that you turn `HIDE_PARTY_NOTIFICATIONS` off, because the script needs to make 2 API calls to hide each party notification. API calls take time, so if your party is buffing continuously, you may see party notifications appear & disappear rapidly. Also, the Habitica API only allows a certain number of API calls per minute (better to use those API calls for buffs if you have lots of mana!)
 
 **_Note that due to [limitations with Google Apps Script](https://issuetracker.google.com/issues/231411987), Automate Habitica+ may take up to 2 mins to hide party notifications if `HIDE_PARTY_NOTIFICATIONS` is set to `true`._**
+
+---
+
+## Quest Completion Percentage
+
+The quest completion percentage is used by [Auto Invite Quests (priority mode)](#quest-selection-mode-quest_invite_mode) and [Party Report](#party-report) to determine which quests your party should focus on.
+
+### How It's Calculated
+
+| Quest Type              | Goal per Member                        | What's Tracked                   |
+| ----------------------- | -------------------------------------- | -------------------------------- |
+| **Egg quests**          | 20 eggs (owned + used for pets/mounts) | Species-specific egg collection  |
+| **Magic potion quests** | 18 potions                             | Color-specific potion collection |
+| **Wacky potion quests** | 9 potions                              | Wacky potion collection          |
+| **Other quests**        | 1 completion                           | Quest achievement count          |
+
+**Formula:** `% = (sum of all members' progress) / (sum of all members' goals) × 100`
+
+### Example
+
+For a party of 4 members and an egg quest that rewards 2 eggs per completion:
+
+- Each member needs 20 eggs → 10 completions each
+- Party total goal: 4 × 10 = 40 completions
+- If members have collected 5, 8, 3, and 4 eggs respectively → 20 total
+- Completion: (20 / 40) × 100 = **50%**
+
+Quests with lower completion percentages are prioritized, helping your party work toward completing all quests together.
+
+---
 
 ## Before Installing
 
