@@ -13,7 +13,7 @@
  * Feeding priority (in order):
  * 1. Standard pets (basic colors) - favorite food only (+5 per feeding)
  * 2. Quest pets (basic colors) - favorite food only (+5 per feeding)
- * 3. Magic potion pets (premium colors) - any leftover food (+2 per feeding)
+ * 3. Magic potion pets (premium colors) - any leftover food (+5 per feeding)
  * 4. Wacky pets - skipped (cannot become mounts)
  * Within each group, prioritizes pets closest to becoming mounts.
  *
@@ -254,9 +254,8 @@ function hatchFeedPetsPriority() {
         continue;
       }
 
-      // this food is "extra" - use it for magic potion pet (+2 per feeding)
-      let feedingsNeeded = Math.ceil(hunger / 2);
-      let feedings = Math.min(feedingsNeeded, amount);
+      // this food is "extra" - use it for magic potion pet
+      let feedings = Math.min(Math.ceil(hunger / FOOD_POINTS_MAGIC_POTION_PET), amount);
 
       if (feedings > 0) {
         feedPet(pet, food, feedings, speciesReadable, colorReadable);
@@ -265,7 +264,7 @@ function hatchFeedPetsPriority() {
         if (foodOwned[food] <= 0) {
           delete foodOwned[food];
         }
-        hunger -= feedings * 2;
+        hunger -= feedings * FOOD_POINTS_MAGIC_POTION_PET;
 
         if (interruptLoop()) {
           return;
@@ -314,11 +313,11 @@ function feedBasicColorPet(
   // get favorite foods for this color
   let favoriteFood = getFavoriteFoods(color);
 
-  // feed ONLY with favorite foods (+5 per feeding)
+  // feed ONLY with favorite foods
   for (let food of favoriteFood) {
-    if ((foodOwned[food] || 0) > 0 && hunger > 0) {
-      let feedingsNeeded = Math.ceil(hunger / 5);
-      let feedings = Math.min(feedingsNeeded, foodOwned[food]);
+    let amount = foodOwned[food] || 0;
+    if (amount > 0 && hunger > 0) {
+      let feedings = Math.min(Math.ceil(hunger / FOOD_POINTS_FAVORITE), amount);
 
       if (feedings > 0) {
         feedPet(pet, food, feedings, speciesReadable, colorReadable);
@@ -327,7 +326,7 @@ function feedBasicColorPet(
         if (foodOwned[food] <= 0) {
           delete foodOwned[food];
         }
-        hunger -= feedings * 5;
+        hunger -= feedings * FOOD_POINTS_FAVORITE;
 
         if (interruptLoop()) {
           return;

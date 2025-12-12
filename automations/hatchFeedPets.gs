@@ -197,7 +197,7 @@ function hatchFeedPets() {
           // if player has enough preferred food for all basic pets of this color
           if (numEachFoodTypeOwned[color] >= numEachFoodTypeNeeded[color]) {
             // calculate feedings needed
-            let feedingsNeeded = Math.ceil(hunger / 5);
+            let feedingsNeeded = Math.ceil(hunger / FOOD_POINTS_FAVORITE);
 
             // for each usable food owned
             for (let [food, amount] of Object.entries(numEachUsableFoodOwned)) {
@@ -230,7 +230,7 @@ function hatchFeedPets() {
             // if player has enough extra extra food
           } else if (numExtraExtraFoodOwned >= numExtraExtraFoodNeeded) {
             // calculate feedings needed
-            let feedingsNeeded = Math.ceil(hunger / 2);
+            let feedingsNeeded = Math.ceil(hunger / FOOD_POINTS_NON_FAVORITE);
 
             // feed until mount
             grewToMount = feedExtraFoodConservative(
@@ -248,14 +248,14 @@ function hatchFeedPets() {
           } else {
             console.log(
               "Cannot feed " +
-                colorReadable +
-                " " +
-                speciesReadable +
-                ": not enough preferred food (need " +
-                numEachFoodTypeNeeded[color] +
-                ", have " +
-                numEachFoodTypeOwned[color] +
-                ")"
+              colorReadable +
+              " " +
+              speciesReadable +
+              ": not enough preferred food (need " +
+              numEachFoodTypeNeeded[color] +
+              ", have " +
+              numEachFoodTypeOwned[color] +
+              ")"
             );
           }
 
@@ -264,7 +264,7 @@ function hatchFeedPets() {
           // if player has enough extra food
           if (numExtraFoodOwned >= numExtraFoodNeeded) {
             // calculate feedings needed
-            let feedingsNeeded = Math.ceil(hunger / 5);
+            let feedingsNeeded = Math.ceil(hunger / FOOD_POINTS_MAGIC_POTION_PET);
 
             // feed until mount
             grewToMount = feedExtraFoodConservative(
@@ -282,14 +282,14 @@ function hatchFeedPets() {
           } else {
             console.log(
               "Cannot feed " +
-                colorReadable +
-                " " +
-                speciesReadable +
-                ": not enough extra food (need " +
-                numExtraFoodNeeded +
-                " extra food, ie. food that would be left over when all unowned basic color mounts are fed their favorite foods; have " +
-                numExtraFoodOwned +
-                ")"
+              colorReadable +
+              " " +
+              speciesReadable +
+              ": not enough extra food (need " +
+              numExtraFoodNeeded +
+              " extra food, ie. food that would be left over when all unowned basic color mounts are fed their favorite foods; have " +
+              numExtraFoodOwned +
+              ")"
             );
           }
         }
