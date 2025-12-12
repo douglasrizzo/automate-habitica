@@ -16,6 +16,16 @@ const scriptProperties = PropertiesService.getScriptProperties();
 const scriptStart = new Date().getTime();
 
 /**
+ * Pet feeding point values.
+ * FOOD_POINTS_FAVORITE: Points gained when feeding a basic color pet its favorite food (+5)
+ * FOOD_POINTS_NON_FAVORITE: Points gained when feeding a basic color pet non-favorite food (+2)
+ * FOOD_POINTS_MAGIC_POTION_PET: Points gained when feeding magic potion pets any food (+5, since they have no preferences)
+ */
+const FOOD_POINTS_FAVORITE = 5;
+const FOOD_POINTS_NON_FAVORITE = 2;
+const FOOD_POINTS_MAGIC_POTION_PET = 5;
+
+/**
  * onTrigger()
  *
  * This function is called by a trigger every 10 mins.

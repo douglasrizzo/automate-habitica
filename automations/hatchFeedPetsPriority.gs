@@ -13,7 +13,7 @@
  * Feeding priority (in order):
  * 1. Standard pets (basic colors) - favorite food only (+5 per feeding)
  * 2. Quest pets (basic colors) - favorite food only (+5 per feeding)
- * 3. Magic potion pets (premium colors) - any leftover food (+2 per feeding)
+ * 3. Magic potion pets (premium colors) - any leftover food (+5 per feeding)
  * 4. Wacky pets - skipped (cannot become mounts)
  * Within each group, prioritizes pets closest to becoming mounts.
  *
@@ -254,33 +254,17 @@ function hatchFeedPetsPriority() {
         continue;
       }
 
-      // this food is "extra" - use it for magic potion pet (+2 per feeding)
-      // use floor to avoid overshooting the 50-point cap with bulk feeding
-      let bulkFeedings = Math.floor(hunger / 2);
-      let feedings = Math.min(bulkFeedings, amount);
+      // this food is "extra" - use it for magic potion pet
+      let feedings = Math.min(Math.ceil(hunger / FOOD_POINTS_MAGIC_POTION_PET), amount);
 
       if (feedings > 0) {
         feedPet(pet, food, feedings, speciesReadable, colorReadable);
 
         foodOwned[food] -= feedings;
-        amount -= feedings; // update local amount for the final feeding check
-        hunger -= feedings * 2;
-
-        if (interruptLoop()) {
-          return;
-        }
-      }
-
-      // if there's remaining hunger (1 point) and we still have this food, feed 1 more
-      // single feedings are allowed to push the pet over 50 to become a mount
-      if (hunger > 0 && amount > 0) {
-        feedPet(pet, food, 1, speciesReadable, colorReadable);
-
-        foodOwned[food] -= 1;
         if (foodOwned[food] <= 0) {
           delete foodOwned[food];
         }
-        hunger -= 2;
+        hunger -= feedings * FOOD_POINTS_MAGIC_POTION_PET;
 
         if (interruptLoop()) {
           return;
@@ -329,36 +313,20 @@ function feedBasicColorPet(
   // get favorite foods for this color
   let favoriteFood = getFavoriteFoods(color);
 
-  // feed ONLY with favorite foods (+5 per feeding)
+  // feed ONLY with favorite foods
   for (let food of favoriteFood) {
     let amount = foodOwned[food] || 0;
     if (amount > 0 && hunger > 0) {
-      // use floor to avoid overshooting the 50-point cap with bulk feeding
-      let bulkFeedings = Math.floor(hunger / 5);
-      let feedings = Math.min(bulkFeedings, amount);
+      let feedings = Math.min(Math.ceil(hunger / FOOD_POINTS_FAVORITE), amount);
 
       if (feedings > 0) {
         feedPet(pet, food, feedings, speciesReadable, colorReadable);
 
         foodOwned[food] -= feedings;
-        amount -= feedings; // update local amount for the final feeding check
-        hunger -= feedings * 5;
-
-        if (interruptLoop()) {
-          return;
-        }
-      }
-
-      // if there's remaining hunger (1-4 points) and we still have this food, feed 1 more
-      // single feedings are allowed to push the pet over 50 to become a mount
-      if (hunger > 0 && amount > 0) {
-        feedPet(pet, food, 1, speciesReadable, colorReadable);
-
-        foodOwned[food] -= 1;
         if (foodOwned[food] <= 0) {
           delete foodOwned[food];
         }
-        hunger -= 5;
+        hunger -= feedings * FOOD_POINTS_FAVORITE;
 
         if (interruptLoop()) {
           return;
