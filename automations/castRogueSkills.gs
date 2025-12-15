@@ -1,18 +1,11 @@
 /**
- * castToolsOfTheTrade(saveMana)
+ * Casts Tools of the Trade until mana is used up.
+ * If saveMana is true, reserves mana for after cron and Stealth casts.
  * 
- * Casts Tools of the Trade over and over until mana is used 
- * up. If saveMana is set to true, reserves any mana that will 
- * remain after cron, plus enough mana to dodge any incomplete 
- * dailies with Stealth.
- * 
- * Run this function with saveMana set to true whenever the 
- * player gains mana: after cron, whenever a task is scored, 
- * and whenever stat point(s) are allocated to INT:
- * https://habitica.fandom.com/wiki/Mana_Points#Restoring_Mana
- * 
- * Run this function with saveMana set to false just after 
- * cron.
+ * @see https://habitica.fandom.com/wiki/Mana_Points#Restoring_Mana
+ * @param {boolean} saveMana - If true, reserve mana for cron and Stealth
+ * @param {number} [stealthsNeeded] - Number of Stealth casts needed (calculated if not provided)
+ * @returns {void}
  */
 function castToolsOfTheTrade(saveMana, stealthsNeeded) {
 
@@ -141,13 +134,10 @@ function castToolsOfTheTrade(saveMana, stealthsNeeded) {
 }
 
 /**
- * castStealthAndDumpMana()
+ * Casts Stealth to dodge incomplete dailies, then dumps remaining mana.
+ * Run just before cron.
  * 
- * Casts Stealth enough times to dodge any incomplete dailies. 
- * Then, casts Tools of the Trade enough times to use up any 
- * mana that will be lost at cron.
- * 
- * Run this function just before cron.
+ * @returns {void}
  */
 function castStealthAndDumpMana() {
 
@@ -183,11 +173,9 @@ function castStealthAndDumpMana() {
 }
 
 /**
- * numStealthsNeeded()
+ * Calculates how many Stealth casts are needed to dodge all incomplete dailies.
  * 
- * Calculates & returns how many more times the player needs to 
- * cast Stealth in order to avoid damage from all their 
- * incomplete dailies.
+ * @returns {number} Number of Stealth casts needed
  */
 function numStealthsNeeded() {
 

@@ -76,19 +76,18 @@ const FEED_PRIORITY = {
 \*************************************/
 
 /**
- * hatchFeedPets()
- *
- * Automatically hatches pets, but only if the player has enough
- * eggs for all pets/mounts of that species, and enough hatching
- * potions for all pets/mounts of that color.
- *
- * Automatically feeds pets, but only if the player has enough
- * of the pet's favorite food(s) to feed all pets with the same
- * favorite food(s).
- *
- * Run this function whenever the player gets eggs, hatching
- * potions, or food: whenever a task is scored, and whenever a
- * quest is completed.
+ * Conservative strategy for hatching and feeding pets.
+ * 
+ * Only hatches pets when the player has enough eggs for ALL pets/mounts of that
+ * species, and enough hatching potions for ALL pets/mounts of that color.
+ * 
+ * Only feeds pets when the player has enough of the pet's favorite food(s) to
+ * feed ALL pets with the same favorite food(s).
+ * 
+ * Run this function whenever the player gets eggs, hatching potions, or food:
+ * whenever a task is scored, and whenever a quest is completed.
+ * 
+ * @returns {void}
  */
 function hatchFeedPets() {
   // if time limit, return
@@ -363,10 +362,18 @@ function hatchFeedPets() {
 }
 
 /**
- * feedExtraFoodConservative(pet, feedingsNeeded, speciesReadable, colorReadable, foodOwned, foodByType, numEachFoodTypeNeeded, contentData)
- *
  * Feeds a pet with extra food (food not needed for basic color mounts).
- * Used by the conservative strategy. Returns true if pet became a mount.
+ * Used by the conservative strategy.
+ * 
+ * @param {string} pet - Pet key in format "Species-Color"
+ * @param {number} feedingsNeeded - Number of feedings needed to reach mount
+ * @param {string} speciesReadable - Human-readable species name
+ * @param {string} colorReadable - Human-readable color name
+ * @param {Object.<string, number>} foodOwned - Food inventory keyed by food name
+ * @param {Object.<string, number>} foodByType - Food totals keyed by target color
+ * @param {Object.<string, number>} numEachFoodTypeNeeded - Food needed per color
+ * @param {Object} contentData - Habitica content data from API
+ * @returns {boolean} True if pet became a mount
  */
 function feedExtraFoodConservative(
   pet,
@@ -415,25 +422,25 @@ function feedExtraFoodConservative(
 \*************************************/
 
 /**
- * hatchFeedPetsPriority()
- *
  * Priority-based pet hatching and feeding strategy.
- *
+ * 
  * Hatching priority (in order):
  * 1. Standard pets (basic colors)
  * 2. Standard pets (magic/premium potions)
  * 3. Quest pets (basic colors)
  * 4. Wacky pets
  * Within each group, sorted alphabetically by species.
- *
+ * 
  * Feeding priority (in order):
  * 1. Basic color pets (standard + quest) - favorite food only (+5 per feeding)
  * 2. Magic potion pets (premium colors) - any leftover food (+5 per feeding)
  * Wacky pets are skipped (cannot become mounts).
  * Within each group, prioritizes pets closest to becoming mounts.
- *
+ * 
  * Run this function whenever the player gets eggs, hatching potions,
  * or food: whenever a task is scored, and whenever a quest is completed.
+ * 
+ * @returns {void}
  */
 function hatchFeedPetsPriority() {
   // if time limit, return
@@ -614,9 +621,14 @@ function hatchFeedPetsPriority() {
 }
 
 /**
- * tryHatchReplacement(species, color, eggsOwned, potionsOwned)
- *
  * Hatches a replacement pet if resources are available.
+ * Called after a pet becomes a mount to immediately hatch another.
+ * 
+ * @param {string} species - Pet species (e.g., "Wolf", "Fox")
+ * @param {string} color - Potion color (e.g., "Base", "Golden")
+ * @param {Object.<string, number>} eggsOwned - Mutable egg inventory
+ * @param {Object.<string, number>} potionsOwned - Mutable potion inventory
+ * @returns {void}
  */
 function tryHatchReplacement(species, color, eggsOwned, potionsOwned) {
   if (hasEnoughResources(species, color, eggsOwned, potionsOwned)) {
@@ -634,20 +646,23 @@ function tryHatchReplacement(species, color, eggsOwned, potionsOwned) {
 \*************************************/
 
 /**
- * hasEnoughResources(species, color, eggsOwned, potionsOwned)
- *
  * Checks if there are eggs and potions available for a given species/color.
- * Returns true if at least 1 egg and 1 potion are available.
+ * 
+ * @param {string} species - Pet species (e.g., "Wolf", "Fox")
+ * @param {string} color - Potion color (e.g., "Base", "Golden")
+ * @param {Object.<string, number>} eggsOwned - Egg inventory keyed by species
+ * @param {Object.<string, number>} potionsOwned - Potion inventory keyed by color
+ * @returns {boolean} True if at least 1 egg and 1 potion are available
  */
 function hasEnoughResources(species, color, eggsOwned, potionsOwned) {
   return (eggsOwned[species] || 0) > 0 && (potionsOwned[color] || 0) > 0;
 }
 
 /**
- * getPetLists()
- *
  * Returns categorized lists of all hatchable pets from content data.
  * Used by both hatchFeedPets strategies.
+ * 
+ * @returns {{nonWackyNonSpecialPets: string[], wackyPets: string[], allNonSpecialPets: string[]}} Pet lists by category
  */
 function getPetLists() {
   let contentData = getContent();
@@ -665,22 +680,19 @@ function getPetLists() {
 }
 
 /**
- * getBasicColors()
- *
  * Returns an array of basic/drop hatching potion colors.
- * These colors have favorite foods.
+ * These colors have favorite foods (e.g., Base, White, Desert, Red, etc.).
+ * 
+ * @returns {string[]} Array of basic color names
  */
 function getBasicColors() {
   return Object.keys(getContent().dropHatchingPotions);
 }
 
 /**
- * getPetCategorySets()
- *
- * Returns Sets for classifying pets by category:
- * - standardPetSet: standard/drop pets (can have basic or premium colors)
- * - questPetSet: quest reward pets (basic colors only)
- * - premiumPetSet: premium pets (premium colors only)
+ * Returns Sets for classifying pets by category.
+ * 
+ * @returns {{standardPetSet: Set<string>, questPetSet: Set<string>, premiumPetSet: Set<string>}} Pet category sets
  */
 function getPetCategorySets() {
   let contentData = getContent();
@@ -692,10 +704,11 @@ function getPetCategorySets() {
 }
 
 /**
- * getOwnedPets(allNonSpecialPets)
- *
  * Returns an object of owned non-special pets with their fed amounts.
  * Pet amount meanings: 5 = newly hatched, >5 = fed, -1 = mount but no pet
+ * 
+ * @param {string[]} allNonSpecialPets - List of all non-special pet keys to filter by
+ * @returns {Object.<string, number>} Owned pets keyed by pet key with fed amount as value
  */
 function getOwnedPets(allNonSpecialPets) {
   let petsOwned = {};
@@ -708,9 +721,10 @@ function getOwnedPets(allNonSpecialPets) {
 }
 
 /**
- * getOwnedMounts(allNonSpecialPets)
- *
  * Returns an object of owned non-special mounts.
+ * 
+ * @param {string[]} allNonSpecialPets - List of all non-special pet keys to filter by
+ * @returns {Object.<string, boolean>} Owned mounts keyed by mount key
  */
 function getOwnedMounts(allNonSpecialPets) {
   let mountsOwned = {};
@@ -723,10 +737,10 @@ function getOwnedMounts(allNonSpecialPets) {
 }
 
 /**
- * getUsableFood()
- *
  * Returns an object of usable food based on ONLY_USE_DROP_FOOD setting.
  * Excludes Saddles and food with 0 quantity.
+ * 
+ * @returns {Object.<string, number>} Usable food keyed by food name with quantity as value
  */
 function getUsableFood() {
   let foodOwned = {};
@@ -742,10 +756,10 @@ function getUsableFood() {
 }
 
 /**
- * getUsableFoodWithTypes()
- *
  * Returns usable food and also groups it by target color type.
  * Used by conservative strategy which needs food totals per color.
+ * 
+ * @returns {{foodOwned: Object.<string, number>, foodByType: Object.<string, number>}} Food inventory and totals by color
  */
 function getUsableFoodWithTypes() {
   let foodOwned = {};
@@ -766,19 +780,22 @@ function getUsableFoodWithTypes() {
 }
 
 /**
- * makeReadable(name)
- *
  * Converts CamelCase names to "Camel Case" format for display.
+ * 
+ * @param {string} name - CamelCase name to convert
+ * @returns {string} Human-readable name with spaces
  */
 function makeReadable(name) {
   return name.replaceAll(/(?<!^)([A-Z])/g, " $1");
 }
 
 /**
- * hatchPet(species, color)
- *
  * Hatches a pet via the Habitica API.
  * Logs the action and returns the API response.
+ * 
+ * @param {string} species - Pet species (e.g., "Wolf", "Fox")
+ * @param {string} color - Potion color (e.g., "Base", "Golden")
+ * @returns {Object} API response from Habitica
  */
 function hatchPet(species, color) {
   let speciesReadable = makeReadable(species);
@@ -791,10 +808,15 @@ function hatchPet(species, color) {
 }
 
 /**
- * feedPet(pet, food, amount, speciesReadable, colorReadable)
- *
  * Feeds a pet via the Habitica API.
  * Logs the action and returns the API response.
+ * 
+ * @param {string} pet - Pet key in format "Species-Color"
+ * @param {string} food - Food key (e.g., "Meat", "Fish")
+ * @param {number} amount - Number of times to feed
+ * @param {string} speciesReadable - Human-readable species name for logging
+ * @param {string} colorReadable - Human-readable color name for logging
+ * @returns {Object} API response from Habitica
  */
 function feedPet(pet, food, amount, speciesReadable, colorReadable) {
   console.log(
@@ -819,9 +841,10 @@ function feedPet(pet, food, amount, speciesReadable, colorReadable) {
 }
 
 /**
- * getFavoriteFoods(color)
- *
  * Returns an array of food keys that are favorites for the given color.
+ * 
+ * @param {string} color - Basic color name (e.g., "Base", "Golden")
+ * @returns {string[]} Array of food keys that are favorites for this color
  */
 function getFavoriteFoods(color) {
   let favorites = [];

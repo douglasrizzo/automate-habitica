@@ -1,15 +1,10 @@
 /**
- * invitePriorityQuest()
- *
- * Chooses the quest scroll with the lowest party completion percentage
- * from the player's inventory and invites their party to the quest.
- * If EXCLUDE_GEM_QUESTS = true, gem quest scrolls are ignored.
- * If EXCLUDE_HOURGLASS_QUESTS = true, hourglass quest scrolls are ignored.
- *
- * Run this function 5-15 mins after the party finishes a quest. The
- * randomized delay allows party members without scripts to run quests
- * too, and prevents multiple "invite quest" requests from hitting
- * Habitica's servers at once.
+ * Chooses the quest scroll with lowest party completion percentage and invites party.
+ * Respects AUTO_INVITE_* settings and BANNED_SCROLLS list.
+ * Run 5-15 mins after quest completion via delayed trigger.
+ * 
+ * @returns {void}
+ * @throws {Error} Sends email notification and rethrows on failure
  */
 function invitePriorityQuest() {
   try {

@@ -1,12 +1,9 @@
 /**
- * forceStartQuest()
+ * Forces pending quests to start after FORCE_START_QUESTS_AFTER_HOURS.
+ * Only works if the player ran the quest or is the party leader.
+ * Run on questInvited/questStarted webhooks and every 10 mins.
  * 
- * Forces pending quests to start after FORCE_START_QUESTS_AFTER_HOURS
- * hours, regardless of how many party members have joined. Only works if 
- * the player ran the quest, or the player is the party leader.
- * 
- * Run this function on the questInvited webhook, on the questStarted 
- * webhook, and every 10 mins.
+ * @returns {void}
  */
 function forceStartQuest() {
 

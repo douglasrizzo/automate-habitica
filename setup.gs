@@ -72,131 +72,138 @@ const HIDE_NOTIFICATIONS_FROM_SPECIFIC_GUILDS = [ // only used if HIDE_ALL_GUILD
 // just remove the // before the quest name to blacklist it
 
 BANNED_SCROLLS = [
-    "The Basi-List",
-    // "The Feral Dust Bunnies",
-    // "Dilatory Distress, Part 1: Message in a Bottle",
-    // "Dilatory Distress, Part 2: Creatures of the Crevasse",
-    // "Dilatory Distress, Part 3: Not a Mere Maid",
-    // "Mayhem in Mistiflying, Part 1: In Which Mistiflying Experiences a Dreadful Bother",
-    // "Mayhem in Mistiflying, Part 2: In Which the Wind Worsens",
-    // "Mayhem in Mistiflying, Part 3: In Which a Mailman is Extremely Rude",
-    // "Stoïkalm Calamity, Part 1: Earthen Enemies",
-    // "Stoïkalm Calamity, Part 2: Seek the Icicle Caverns",
-    // "Stoïkalm Calamity, Part 3: Icicle Drake Quake",
-    // "Terror in the Taskwoods, Part 1: The Blaze in the Taskwoods",
-    // "Terror in the Taskwoods, Part 2: Finding the Flourishing Fairies",
-    // "Terror in the Taskwoods, Part 3: Jacko of the Lantern",
-    // "The Mystery of the Masterclassers, Part 1: Read Between the Lines",
-    // "The Mystery of the Masterclassers, Part 2: Assembling the a'Voidant",
-    // "The Mystery of the Masterclassers, Part 3: City in the Sands",
-    // "The Mystery of the Masterclassers, Part 4: The Lost Masterclasser",
-    // "The Insta-Gator",
-    // "The Overpacked Alpaca",
-    // "The Indulgent Armadillo",
-    // "The Magical Axolotl",
-    // "Stop Badgering Me!",
-    // "The CRITICAL BUG",
-    // "The Killer Bunny",
-    // "Bye, Bye, Butterfry",
-    // "A Purrplexing Predicament",
-    // "The Chaotic Chameleon",
-    // "Such a Cheetah",
-    // "The Mootant Cow",
-    // "The Fiddling Crab",
-    // "The Dilatory Derby",
-    // "Triple Dog Dare!",
-    // "The Dolphin of Doubt",
-    // "The Birds of Preycrastination",
-    // "The Nefarious Ferret",
-    // "Swamp of the Clutter Frog",
-    // "The Spirit of Spring",
-    // "The Gear-affe",
-    // "The Fiery Gryphon",
-    // "The Guinea Pig Gang",
-    // "Help! Harpy!",
-    // "The Hedgebeast",
-    // "What a Hippo-Crite",
-    // "Ride the Night-Mare",
-    // "Kangaroo Catastrophe",
-    // "The Kraken of Inkomplete",
-    // "Monstrous Mandrill and the Mischief Monkeys",
-    // "Infestation of the NowDo Nudibranchs",
-    // "The Call of Octothulu",
-    // "The Perfidious Plotter!",
-    // "The Night-Owl",
-    // "The Push-and-Pull Peacock",
-    // "The Fowl Frost",
-    // "The Perfectionist Platypus",
-    // "The Pterror-dactyl",
-    // "Raccoon Tycoon",
-    // "The Rat King",
-    // "Escape the Cave Creature",
-    // "Rooster Rampage",
-    // "The Sabre Cat",
-    // "Danger in the Depths: Sea Serpent Strike!",
-    // "The Thunder Ram",
-    // "The Jelly Regent",
-    // "The Somnolent Sloth",
-    // "The Snail of Drudgery Sludge",
-    // "The Serpent of Distraction",
-    // "The Icy Arachnid",
-    // "The Sneaky Squirrel",
-    // "The Tangle Tree",
-    // "King of the Dinosaurs",
-    // "The Dinosaur Unearthed",
-    // "The Trampling Triceratops",
-    // "Guide the Turtle",
-    // "Convincing the Unicorn Queen",
-    // "The Veloci-Rapper",
-    // "Wail of the Whale",
-    // "A Tangled Yarn",
-    // "The Amber Alliance",
-    // "A Startling Starry Idea",
-    // "Brazen Beetle Battle",
-    // "A Bright Fluorite Fright",
-    // "The Onyx Odyssey",
-    // "Calm the Corrupted Cupid",
-    // "Ruby Rapport",
-    // "The Silver Solution",
-    // "A Maze of Moss",
-    // "Turquoise Treasure Toil",
-    // "A Jaded Jinx",
-    // "The Legend of the Obscure Opals",
-    // "Trapper Santa",
-    // "Find the Cub",
-    // "Egg Hunt",
-    // "Waffling with the Fool: Disaster Breakfast!",
-    // "Virtual Mayhem with the April Fool: The Beepening",
-    // "The Moody Mushroom",
-    // "Attack of the Mundane, Part 1: Dish Disaster!",
-    // "Attack of the Mundane, Part 2: The SnackLess Monster",
-    // "Attack of the Mundane, Part 3: The Laundromancer",
-    // "The Golden Knight, Part 1: A Stern Talking-To",
-    // "The Golden Knight, Part 2: Gold Knight",
-    // "The Golden Knight, Part 3: The Iron Knight",
-    // "Lunar Battle, Part 1: Find the Mysterious Shards",
-    // "Lunar Battle, Part 2: Stop the Overshadowing Stress",
-    // "Lunar Battle, Part 3: The Monstrous Moon",
-    // "Recidivate, Part 1: The Moonstone Chain",
-    // "Recidivate, Part 2: Recidivate the Necromancer",
-    // "Recidivate, Part 3: Recidivate Transformed",
-    // "Vice, Part 1: Free Yourself of the Dragon's Influence",
-    // "Vice, Part 2: Find the Lair of the Wyrm",
-    // "Vice, Part 3: Vice Awakens",
-    // "Mysterious Mechanical Marvels!",
-    // "A Voyage of Cosmic Concentration",
-    // "A Whirl with a Wind-Up Warrior",
-    // "The Be-Wilder",
-    // "Burnout and the Exhaust Spirits",
-    // "The Dread Drag'on of Dilatory",
-    // "The Dysheartener",
-    // "The Abominable Stressbeast of the Stoïkalm Steppes"
+  "The Basi-List",
+  // "The Feral Dust Bunnies",
+  // "Dilatory Distress, Part 1: Message in a Bottle",
+  // "Dilatory Distress, Part 2: Creatures of the Crevasse",
+  // "Dilatory Distress, Part 3: Not a Mere Maid",
+  // "Mayhem in Mistiflying, Part 1: In Which Mistiflying Experiences a Dreadful Bother",
+  // "Mayhem in Mistiflying, Part 2: In Which the Wind Worsens",
+  // "Mayhem in Mistiflying, Part 3: In Which a Mailman is Extremely Rude",
+  // "Stoïkalm Calamity, Part 1: Earthen Enemies",
+  // "Stoïkalm Calamity, Part 2: Seek the Icicle Caverns",
+  // "Stoïkalm Calamity, Part 3: Icicle Drake Quake",
+  // "Terror in the Taskwoods, Part 1: The Blaze in the Taskwoods",
+  // "Terror in the Taskwoods, Part 2: Finding the Flourishing Fairies",
+  // "Terror in the Taskwoods, Part 3: Jacko of the Lantern",
+  // "The Mystery of the Masterclassers, Part 1: Read Between the Lines",
+  // "The Mystery of the Masterclassers, Part 2: Assembling the a'Voidant",
+  // "The Mystery of the Masterclassers, Part 3: City in the Sands",
+  // "The Mystery of the Masterclassers, Part 4: The Lost Masterclasser",
+  // "The Insta-Gator",
+  // "The Overpacked Alpaca",
+  // "The Indulgent Armadillo",
+  // "The Magical Axolotl",
+  // "Stop Badgering Me!",
+  // "The CRITICAL BUG",
+  // "The Killer Bunny",
+  // "Bye, Bye, Butterfry",
+  // "A Purrplexing Predicament",
+  // "The Chaotic Chameleon",
+  // "Such a Cheetah",
+  // "The Mootant Cow",
+  // "The Fiddling Crab",
+  // "The Dilatory Derby",
+  // "Triple Dog Dare!",
+  // "The Dolphin of Doubt",
+  // "The Birds of Preycrastination",
+  // "The Nefarious Ferret",
+  // "Swamp of the Clutter Frog",
+  // "The Spirit of Spring",
+  // "The Gear-affe",
+  // "The Fiery Gryphon",
+  // "The Guinea Pig Gang",
+  // "Help! Harpy!",
+  // "The Hedgebeast",
+  // "What a Hippo-Crite",
+  // "Ride the Night-Mare",
+  // "Kangaroo Catastrophe",
+  // "The Kraken of Inkomplete",
+  // "Monstrous Mandrill and the Mischief Monkeys",
+  // "Infestation of the NowDo Nudibranchs",
+  // "The Call of Octothulu",
+  // "The Perfidious Plotter!",
+  // "The Night-Owl",
+  // "The Push-and-Pull Peacock",
+  // "The Fowl Frost",
+  // "The Perfectionist Platypus",
+  // "The Pterror-dactyl",
+  // "Raccoon Tycoon",
+  // "The Rat King",
+  // "Escape the Cave Creature",
+  // "Rooster Rampage",
+  // "The Sabre Cat",
+  // "Danger in the Depths: Sea Serpent Strike!",
+  // "The Thunder Ram",
+  // "The Jelly Regent",
+  // "The Somnolent Sloth",
+  // "The Snail of Drudgery Sludge",
+  // "The Serpent of Distraction",
+  // "The Icy Arachnid",
+  // "The Sneaky Squirrel",
+  // "The Tangle Tree",
+  // "King of the Dinosaurs",
+  // "The Dinosaur Unearthed",
+  // "The Trampling Triceratops",
+  // "Guide the Turtle",
+  // "Convincing the Unicorn Queen",
+  // "The Veloci-Rapper",
+  // "Wail of the Whale",
+  // "A Tangled Yarn",
+  // "The Amber Alliance",
+  // "A Startling Starry Idea",
+  // "Brazen Beetle Battle",
+  // "A Bright Fluorite Fright",
+  // "The Onyx Odyssey",
+  // "Calm the Corrupted Cupid",
+  // "Ruby Rapport",
+  // "The Silver Solution",
+  // "A Maze of Moss",
+  // "Turquoise Treasure Toil",
+  // "A Jaded Jinx",
+  // "The Legend of the Obscure Opals",
+  // "Trapper Santa",
+  // "Find the Cub",
+  // "Egg Hunt",
+  // "Waffling with the Fool: Disaster Breakfast!",
+  // "Virtual Mayhem with the April Fool: The Beepening",
+  // "The Moody Mushroom",
+  // "Attack of the Mundane, Part 1: Dish Disaster!",
+  // "Attack of the Mundane, Part 2: The SnackLess Monster",
+  // "Attack of the Mundane, Part 3: The Laundromancer",
+  // "The Golden Knight, Part 1: A Stern Talking-To",
+  // "The Golden Knight, Part 2: Gold Knight",
+  // "The Golden Knight, Part 3: The Iron Knight",
+  // "Lunar Battle, Part 1: Find the Mysterious Shards",
+  // "Lunar Battle, Part 2: Stop the Overshadowing Stress",
+  // "Lunar Battle, Part 3: The Monstrous Moon",
+  // "Recidivate, Part 1: The Moonstone Chain",
+  // "Recidivate, Part 2: Recidivate the Necromancer",
+  // "Recidivate, Part 3: Recidivate Transformed",
+  // "Vice, Part 1: Free Yourself of the Dragon's Influence",
+  // "Vice, Part 2: Find the Lair of the Wyrm",
+  // "Vice, Part 3: Vice Awakens",
+  // "Mysterious Mechanical Marvels!",
+  // "A Voyage of Cosmic Concentration",
+  // "A Whirl with a Wind-Up Warrior",
+  // "The Be-Wilder",
+  // "Burnout and the Exhaust Spirits",
+  // "The Dread Drag'on of Dilatory",
+  // "The Dysheartener",
+  // "The Abominable Stressbeast of the Stoïkalm Steppes"
 ]
 
 /*************************************\
  *  DO NOT EDIT ANYTHING BELOW HERE  *
 \*************************************/
 
+/**
+ * Installs and configures Automate Habitica+.
+ * Validates settings, deletes old triggers/webhooks, queues automations,
+ * and creates new triggers/webhooks.
+ * 
+ * @returns {void}
+ */
 let installing;
 function install() {
 
@@ -252,6 +259,11 @@ function install() {
   }
 }
 
+/**
+ * Uninstalls Automate Habitica+ by removing all triggers and webhooks.
+ * 
+ * @returns {void}
+ */
 function uninstall() {
 
   // delete triggers & webhooks
@@ -261,6 +273,12 @@ function uninstall() {
   console.log("Done!");
 }
 
+/**
+ * Validates all configuration constants.
+ * Logs errors for any invalid settings.
+ * 
+ * @returns {boolean} True if all settings are valid, false otherwise
+ */
 function validateConstants() {
 
   let valid = true;
@@ -551,6 +569,11 @@ function validateConstants() {
   return valid;
 }
 
+/**
+ * Deletes all project triggers.
+ * 
+ * @returns {void}
+ */
 function deleteTriggers() {
   let triggers = ScriptApp.getProjectTriggers();
   if (triggers.length > 0) {
@@ -563,6 +586,11 @@ function deleteTriggers() {
   }
 }
 
+/**
+ * Creates the main time-based trigger that runs every 10 minutes.
+ * 
+ * @returns {void}
+ */
 function createTrigger() {
 
   console.log("Creating trigger");
@@ -573,6 +601,12 @@ function createTrigger() {
     .create();
 }
 
+/**
+ * Deletes webhooks created by this script.
+ * 
+ * @param {boolean} [groupChatReceived] - If true, only delete groupChatReceived webhooks
+ * @returns {void}
+ */
 function deleteWebhooks(groupChatReceived) {
   let webhooks = JSON.parse(fetch("https://habitica.com/api/v3/user/webhook", GET_PARAMS)).data;
   if (webhooks.length > 0) {
@@ -591,6 +625,12 @@ function deleteWebhooks(groupChatReceived) {
   }
 }
 
+/**
+ * Creates webhooks based on enabled automation settings.
+ * 
+ * @param {boolean} [groupChatReceived] - If true, only create groupChatReceived webhooks
+ * @returns {void}
+ */
 function createWebhooks(groupChatReceived) {
 
   let webhooks = [];

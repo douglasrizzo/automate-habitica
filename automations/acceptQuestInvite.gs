@@ -1,10 +1,8 @@
 /**
- * acceptQuestInvite()
- * 
  * Accepts a pending quest invite if there is one.
+ * Run on questInvited webhook and every 10 mins as backup.
  * 
- * Run this function on the questInvited webhook. Also run this
- * function every 10 mins in case the webhook fails.
+ * @returns {void}
  */
 function acceptQuestInvite() {
 

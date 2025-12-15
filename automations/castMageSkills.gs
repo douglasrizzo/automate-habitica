@@ -1,19 +1,10 @@
 /**
- * castEarthquake(saveMana)
+ * Casts Earthquake until mana is used up.
+ * If saveMana is true, reserves mana for cron, Chilling Frost, and Burst of Flames.
  * 
- * Casts Earthquake over and over until mana is used up. If 
- * saveMana is set to true, reserves any mana that will remain 
- * after cron, plus enough mana to freeze any incomplete 
- * dailies' streaks with Chilling Frost, plus enough mana to 
- * do 3000 damage to the quest boss with Burst of Flames.
- * 
- * Run this function with saveMana set to true whenever the 
- * player gains mana: after cron, whenever a task is scored, 
- * and whenever stat point(s) are allocated to INT:
- * https://habitica.fandom.com/wiki/Mana_Points#Restoring_Mana
- * 
- * Run this function with saveMana set to false just after 
- * cron.
+ * @see https://habitica.fandom.com/wiki/Mana_Points#Restoring_Mana
+ * @param {boolean} saveMana - If true, reserve mana for cron and other skills
+ * @returns {void}
  */
 function castEarthquake(saveMana) {
 
@@ -73,14 +64,10 @@ function castEarthquake(saveMana) {
 }
 
 /**
- * burnBossAndDumpMana()
+ * Casts Chilling Frost, Burst of Flames to finish boss, then dumps remaining mana.
+ * Run just before cron.
  * 
- * Casts Chilling Frost if the player has any incomplete dailies. 
- * Then, casts Burst of Flames enough times to get pending damage 
- * above the quest boss's remaining health. Then, casts Ethereal 
- * Surge enough times to use up any mana that will be lost at cron.
- * 
- * Run this function just before cron.
+ * @returns {void}
  */
 function burnBossAndDumpMana() {
 

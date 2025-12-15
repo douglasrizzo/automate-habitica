@@ -1,20 +1,10 @@
 /**
- * pauseResumeDamage()
+ * Calculates pending damage and auto-pauses/resumes damage.
+ * Checks player into inn if damage exceeds MAX_PLAYER_DAMAGE or MAX_PARTY_DAMAGE.
+ * Checks player out of inn when damage is safe.
  * 
- * Calculates pending damage to player & party based on player's
- * incomplete dailies, stats, & the current quest. Checks player 
- * into the inn if pending damage to player or party exceed 
- * MAX_PLAYER_DAMAGE or MAX_PARTY_DAMAGE or player's hp or party 
- * members' hp, checks player out of inn otherwise.
- * 
- * Run this function whenever the player is invited to a quest, 
- * when the player crons, and periodically throughout the day.
- * 
- * If the player is sleeping, run this function whenever they cast 
- * stealth, whenever a due daily is scored, whenever they level up 
- * to an even number level <= 100, whenever stat points are 
- * allocated to CON, whenever CON is buffed, whenever the player's 
- * party finishes a quest, and whenever the player/party is healed.
+ * @param {string} [questKey] - Quest key to use for damage calculation (defaults to current quest)
+ * @returns {void}
  */
 function pauseResumeDamage(questKey) {
 
@@ -117,6 +107,10 @@ function pauseResumeDamage(questKey) {
     }
   }
 
+  /**
+   * Checks player into the inn (pauses damage).
+   * @returns {void}
+   */
   function sleep() {
     if (!user.preferences.sleep) {
 
@@ -134,6 +128,10 @@ function pauseResumeDamage(questKey) {
     }
   }
 
+  /**
+   * Checks player out of the inn (resumes damage).
+   * @returns {void}
+   */
   function wakeUp() {
     if (user.preferences.sleep) {
 

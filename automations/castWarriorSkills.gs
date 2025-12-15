@@ -1,18 +1,10 @@
 /**
- * castValorousPresence(saveMana)
+ * Casts Valorous Presence until mana is used up.
+ * If saveMana is true, reserves mana for after cron and boss damage.
  * 
- * Casts Valorous Presence over and over until mana is used 
- * up. If saveMana is set to true, reserves any mana that will 
- * remain after cron, plus enough mana to do 3000 damage to 
- * the quest boss with Brutal Smash.
- * 
- * Run this function with saveMana set to true whenever the 
- * player gains mana: after cron, whenever a task is scored, 
- * and whenever stat point(s) are allocated to INT:
- * https://habitica.fandom.com/wiki/Mana_Points#Restoring_Mana
- * 
- * Run this function with saveMana set to false just after 
- * cron.
+ * @see https://habitica.fandom.com/wiki/Mana_Points#Restoring_Mana
+ * @param {boolean} saveMana - If true, reserve mana for cron and Brutal Smash
+ * @returns {void}
  */
 function castValorousPresence(saveMana) {
 
@@ -77,13 +69,10 @@ function castValorousPresence(saveMana) {
 }
 
 /**
- * smashBossAndDumpMana()
+ * Casts Brutal Smash to finish boss, then dumps remaining mana on Valorous Presence.
+ * Run just before cron.
  * 
- * Casts Brutal Smash enough times to get pending damage above
- * the quest boss's remaining health. Then, casts Valorous Presence
- * enough times to use up any mana that will be lost at cron.
- * 
- * Run this function just before cron.
+ * @returns {void}
  */
 function smashBossAndDumpMana() {
 

@@ -16,9 +16,11 @@ const scriptProperties = PropertiesService.getScriptProperties();
 const scriptStart = new Date().getTime();
 
 /**
- * onTrigger()
- *
- * This function is called by a trigger every 10 mins.
+ * Main trigger handler called every 10 minutes.
+ * Re-enables disabled webhooks and processes the trigger and queue.
+ * 
+ * @returns {void}
+ * @throws {Error} Sends email notification and rethrows on failure
  */
 function onTrigger() {
   try {
@@ -40,9 +42,14 @@ function onTrigger() {
 }
 
 /**
- * doPost(e)
- *
- * This function is called by webhooks.
+ * Webhook handler called by Habitica webhooks.
+ * Processes the webhook data and adds appropriate tasks to the queue.
+ * 
+ * @param {Object} e - Google Apps Script event object
+ * @param {Object} e.postData - POST data from the webhook
+ * @param {string} e.postData.contents - JSON string of webhook payload
+ * @returns {void}
+ * @throws {Error} Sends email notification and rethrows on failure (except Address unavailable)
  */
 let webhook;
 function doPost(e) {
@@ -104,11 +111,10 @@ function doPost(e) {
 }
 
 /**
- * processTrigger()
- *
- * Adds functions to the queue that need to run just before
- * day start, just after day start, just after cron, or
- * periodically.
+ * Adds functions to the queue based on timing and settings.
+ * Handles scheduling for: before cron, after cron, and periodic tasks.
+ * 
+ * @returns {void}
  */
 function processTrigger() {
   // get times
@@ -198,9 +204,18 @@ function processTrigger() {
 }
 
 /**
- * processWebhook(webhookData)
- *
- * Adds functions to the queue depending on the webhook data.
+ * Adds functions to the queue based on webhook type and data.
+ * 
+ * @param {Object} webhookData - Parsed webhook data
+ * @param {string} webhookData.webhookType - Type of webhook (scored, leveledUp, questInvited, etc.)
+ * @param {string} [webhookData.taskType] - Type of task scored
+ * @param {boolean} [webhookData.isDue] - Whether the daily was due
+ * @param {number} [webhookData.gp] - Current gold
+ * @param {string} [webhookData.dropType] - Type of drop received
+ * @param {number} [webhookData.lvl] - New level (for leveledUp)
+ * @param {string} [webhookData.questKey] - Quest key (for quest events)
+ * @param {string} [webhookData.groupId] - Group ID (for chat events)
+ * @returns {void}
  */
 function processWebhook(webhookData) {
   // log webhook type
@@ -384,13 +399,11 @@ function processWebhook(webhookData) {
 }
 
 /**
- * processQueue()
- *
- * Loops through the queue, running functions in order of priority,
- * until there are no more functions left in the queue. Script lock
- * ensures only one instance can run the queue at a time. All API
- * calls are kept within the queue (script lock), to prevent
- * collisions.
+ * Processes the task queue in priority order.
+ * Uses script lock to prevent concurrent execution.
+ * All API calls are made within this locked section to prevent collisions.
+ * 
+ * @returns {void}
  */
 function processQueue() {
   try {
@@ -539,12 +552,10 @@ function processQueue() {
 }
 
 /**
- * interruptLoop()
- *
- * Call this function after each iteration of an indefinite
- * loop to check for urgent functions that should interrupt
- * the loop. Returns true if the loop should stop early to
- * avoid timing out or exceeding the URL Fetch limit.
+ * Checks for urgent tasks that should interrupt a long-running loop.
+ * Call after each iteration of an indefinite loop.
+ * 
+ * @returns {boolean|undefined} True if loop should stop early to avoid timeout, undefined otherwise
  */
 function interruptLoop() {
   while (true) {
@@ -584,12 +595,11 @@ function interruptLoop() {
 }
 
 /**
- * beforeCronSkills()
- *
- * Attack the boss and use up mana that will be lost at cron.
- * Run this function just before the player's day start time,
- * at least 6 mins before day start (max Google Apps Script
- * run time).
+ * Attacks the boss and uses up mana that will be lost at cron.
+ * Run just before day start, at least 6 mins before (max GAS run time).
+ * 
+ * @param {boolean} [retry] - Whether this is a retry attempt after skill not found error
+ * @returns {void}
  */
 function beforeCronSkills(retry) {
   try {
@@ -614,10 +624,11 @@ function beforeCronSkills(retry) {
 }
 
 /**
- * afterCronSkills()
- *
- * Cast buffs until all mana is used up. Run this function
- * just after the player's cron.
+ * Casts buffs until all mana is used up.
+ * Run just after the player's cron.
+ * 
+ * @param {boolean} [retry] - Whether this is a retry attempt after skill not found error
+ * @returns {void}
  */
 function afterCronSkills(retry) {
   try {
@@ -642,11 +653,11 @@ function afterCronSkills(retry) {
 }
 
 /**
- * useExcessMana()
- *
- * Use excess mana to cast buffs. Reserves all mana that
- * will remain after cron, plus enough mana to do 3000
- * damage to the quest boss.
+ * Uses excess mana to cast buffs.
+ * Reserves mana that will remain after cron, plus enough for 3000 boss damage.
+ * 
+ * @param {boolean} [retry] - Whether this is a retry attempt after skill not found error
+ * @returns {void}
  */
 function useExcessMana(retry) {
   try {
@@ -671,13 +682,15 @@ function useExcessMana(retry) {
 }
 
 /**
- * fetch(url, params)
- *
- * Wrapper for Google Apps Script's UrlFetchApp.fetch(url, params):
- * https://developers.google.com/apps-script/reference/url-fetch/url-fetch-app#fetchurl,-params
- *
- * Retries failed API calls up to 2 times, retries for up to 1 min if
- * Habitica's servers are down, & handles Habitica's rate limiting.
+ * Wrapper for UrlFetchApp.fetch with retry logic and rate limiting.
+ * Retries failed API calls up to 2 times, handles server downtime,
+ * and respects Habitica's rate limiting.
+ * 
+ * @see https://developers.google.com/apps-script/reference/url-fetch/url-fetch-app#fetchurl,-params
+ * @param {string} url - The URL to fetch
+ * @param {Object} params - Fetch parameters (method, headers, etc.)
+ * @returns {GoogleAppsScript.URL_Fetch.HTTPResponse} The API response
+ * @throws {Error} On 3xx/4xx errors or after 3 failed attempts for 5xx errors
  */
 let rateLimitRemaining;
 let rateLimitReset;
@@ -761,11 +774,10 @@ function fetch(url, params) {
 }
 
 /**
- * getTotalStat(stat)
- *
- * Returns the total value of a stat, including level, buffs, allocated,
- * & equipment. Pass the name of the stat you want calculated to the
- * function: "int", "con", "per", or "str".
+ * Returns the total value of a stat including level, buffs, allocated, and equipment.
+ * 
+ * @param {string} stat - The stat to calculate: "int", "con", "per", or "str"
+ * @returns {number} Total stat value
  */
 function getTotalStat(stat) {
   // INT is easy to calculate with a simple formula
@@ -799,10 +811,10 @@ function getTotalStat(stat) {
 }
 
 /**
- * function calculatePerfectDayBuff()
- *
- * Calculates & returns the player's perfect day buff:
- * https://habitica.fandom.com/wiki/Perfect_Day
+ * Calculates the player's perfect day buff.
+ * 
+ * @see https://habitica.fandom.com/wiki/Perfect_Day
+ * @returns {number} Perfect day buff value (0 if any daily is incomplete)
  */
 function calculatePerfectDayBuff() {
   for (let daily of getDailies()) {
@@ -814,11 +826,11 @@ function calculatePerfectDayBuff() {
 }
 
 /**
- * getUser(updated)
- *
- * Fetches user data from the Habitica API if it hasn't already
- * been fetched during this execution, or if updated is set to
- * true.
+ * Fetches user data from the Habitica API.
+ * Caches the result for subsequent calls within the same execution.
+ * 
+ * @param {boolean} [updated] - Force refresh from API even if cached
+ * @returns {Object} User data object from Habitica API
  */
 let user;
 function getUser(updated) {
@@ -869,12 +881,11 @@ function getUser(updated) {
 }
 
 /**
- * getTasks()
- *
- * Fetches task data from the Habitica API if it hasn't
- * already been fetched during this execution. Removes
- * challenge tasks, group tasks, and rewards from the
- * task list, and stores daily data in a separate object.
+ * Fetches task data from the Habitica API.
+ * Removes challenge tasks, group tasks, and rewards from the task list.
+ * Caches dailies in a separate object for getDailies().
+ * 
+ * @returns {Object[]} Array of task objects (excludes rewards, challenge, and group tasks)
  */
 let tasks;
 function getTasks() {
@@ -924,10 +935,10 @@ function getTasks() {
 }
 
 /**
- * getDailies()
- *
- * Fetches daily data from the Habitica API if it hasn't
- * already been fetched during this execution.
+ * Returns daily tasks from cached data.
+ * Fetches from API via getTasks() if not already cached.
+ * 
+ * @returns {Object[]} Array of daily task objects
  */
 let dailies;
 function getDailies() {
@@ -938,11 +949,11 @@ function getDailies() {
 }
 
 /**
- * getParty(updated)
- *
- * Fetches party data from the Habitica API if it hasn't already
- * been fetched during this execution, or if updated is set to
- * true.
+ * Fetches party data from the Habitica API.
+ * Caches the result for subsequent calls within the same execution.
+ * 
+ * @param {boolean} [updated] - Force refresh from API even if cached
+ * @returns {Object} Party data object from Habitica API
  */
 let party;
 function getParty(updated) {
@@ -955,11 +966,12 @@ function getParty(updated) {
 }
 
 /**
- * getMembers(updated)
- *
- * Fetches party member data from the Habitica API if it hasn't
- * already been fetched during this execution, or if updated is
- * set to true.
+ * Fetches party member data from the Habitica API.
+ * Includes all public fields for each member.
+ * Caches the result for subsequent calls within the same execution.
+ * 
+ * @param {boolean} [updated] - Force refresh from API even if cached
+ * @returns {Object[]} Array of party member data objects
  */
 let members;
 function getMembers(updated) {
@@ -994,11 +1006,12 @@ function getMembers(updated) {
 }
 
 /**
- * getContent(updated)
- *
- * Fetches content data from the Habitica API if it hasn't already
- * been fetched during this execution, or if updated is set to
- * true.
+ * Fetches Habitica game content data from the API.
+ * Contains all game items, pets, quests, gear, etc.
+ * Caches the result for subsequent calls within the same execution.
+ * 
+ * @param {boolean} [updated] - Force refresh from API even if cached
+ * @returns {Object} Content data object from Habitica API
  */
 let content;
 function getContent(updated) {
@@ -1030,11 +1043,10 @@ function getContent(updated) {
 }
 
 /**
- * getQuestCompletionData()
- *
  * Calculates quest completion percentages for the party.
- * Returns an array of quest objects with questKey and completionPercentage.
  * Adapted from Quest Tracker by @bumbleshoot.
+ * 
+ * @returns {{questKey: string, questName: string, completionPercentage: number}[]} Array of quest completion data
  */
 function getQuestCompletionData() {
   // if no party, party = user
@@ -1236,11 +1248,11 @@ function getQuestCompletionData() {
 }
 
 /**
- * reenableWebhooks()
- *
- * Checks the script's webhooks and re-enables any that have
- * been disabled. Temporary, until Google updates Google Apps
- * Script to allow sending API responses manually.
+ * Checks and re-enables any disabled webhooks.
+ * Adds missed webhook tasks to the queue.
+ * Temporary workaround until Google allows manual API responses in GAS.
+ * 
+ * @returns {void}
  */
 let reenabling;
 function reenableWebhooks() {

@@ -1,12 +1,9 @@
 /**
- * purchaseArmoires
+ * Spends excess gold on Enchanted Armoires, reserving RESERVE_GOLD.
  * 
- * Spends all but RESERVE_GOLD of the player's gold on Enchanted
- * Armoires.
- * 
- * Run this function whenever the player gains gold: whenever a
- * task is scored, and whenever a quest is completed:
- * https://habitica.fandom.com/wiki/Gold_Points
+ * @see https://habitica.fandom.com/wiki/Gold_Points
+ * @param {number} [gold] - Current gold (fetched from API if not provided)
+ * @returns {void}
  */
 function purchaseArmoires(gold) {
 

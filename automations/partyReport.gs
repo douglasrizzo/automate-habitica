@@ -1,11 +1,9 @@
 /**
- * partyReport()
- *
- * Sends a party report to the party chat with recommended quests
- * sorted by completion percentage (lowest first).
- *
- * Shows up to PARTY_REPORT_QUEST_COUNT quests with up to 3 random
- * party members who have scrolls for each quest.
+ * Sends a party report to chat with recommended quests sorted by completion %.
+ * Shows up to PARTY_REPORT_QUEST_COUNT quests with up to 3 members who have scrolls.
+ * Respects PARTY_REPORT_INTERVAL_DAYS between reports.
+ * 
+ * @returns {void}
  */
 function partyReport() {
   // check if enough time has passed since last report
@@ -65,9 +63,11 @@ function partyReport() {
 }
 
 /**
- * generateQuestRecommendationsMessage(partyMembers, contentData)
- *
  * Generates the quest recommendations message with members who have scrolls.
+ * 
+ * @param {Object[]} partyMembers - Array of party member data from API
+ * @param {Object} contentData - Habitica content data from API
+ * @returns {string} Formatted message for party chat
  */
 function generateQuestRecommendationsMessage(partyMembers, contentData) {
   let questCompletionData = getQuestCompletionData();

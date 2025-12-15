@@ -1,19 +1,10 @@
 /**
- * castProtectiveAura(beforeCron)
+ * Casts Protective Aura until excess mana is used up.
+ * Reserves mana for party healing. If beforeCron is true, dumps mana before cron.
  * 
- * Casts Protective Aura over and over until excess mana is 
- * used up. Reserves enough mana to fully heal the whole party
- * every hour for the next 16 hours. If beforeCron is set to 
- * true, ensures enough mana is used up that none will be 
- * lost at cron.
- * 
- * Run this function with beforeCron set to false whenever the 
- * player gains mana: after cron, whenever a task is scored, 
- * and whenever stat point(s) are allocated to INT:
- * https://habitica.fandom.com/wiki/Mana_Points#Restoring_Mana
- * 
- * Run this function with beforeCron set to true just before 
- * cron.
+ * @see https://habitica.fandom.com/wiki/Mana_Points#Restoring_Mana
+ * @param {boolean} beforeCron - If true, ensure mana is dumped before cron resets it
+ * @returns {void}
  */
 function castProtectiveAura(beforeCron) {
 
@@ -59,13 +50,10 @@ function castProtectiveAura(beforeCron) {
 }
 
 /**
- * healParty()
+ * Casts Blessing to heal party members, then Healing Light for self.
+ * Run every 10 mins.
  * 
- * Casts Blessing enough times to heal all other party members,
- * then casts Healing Light enough times to finish healing the
- * player.
- * 
- * Run this function every 10 mins.
+ * @returns {void}
  */
 function healParty() {
     
