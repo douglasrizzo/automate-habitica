@@ -35,19 +35,21 @@ function invitePriorityQuest() {
     let availableQuests = [];
     for (let [questKey, numScrolls] of Object.entries(getUser().items.quests)) {
       if (numScrolls > 0) {
-        // if not excluded by settings
         let category = getContent().quests[questKey].category;
-        if (
-          (AUTO_INVITE_HOURGLASS_QUESTS === true &&
-            category === "timeTravelers") ||
-          (category != "timeTravelers" &&
-            ((AUTO_INVITE_GOLD_QUESTS === true &&
-              typeof content.quests[questKey].goldValue !== "undefined") ||
-              (AUTO_INVITE_UNLOCKABLE_QUESTS === true &&
-                category === "unlockable") ||
-              (AUTO_INVITE_PET_QUESTS === true &&
-                ["pet", "hatchingPotion"].includes(category))))
-        ) {
+
+        // if not excluded by settings
+        let canInvite = !BANNED_SCROLLS.includes(content.quests[questKey].text) &&
+          ((AUTO_INVITE_HOURGLASS_QUESTS === true && category === "timeTravelers") ||
+            (category != "timeTravelers" && (
+              (AUTO_INVITE_GOLD_QUESTS === true && typeof content.quests[questKey].goldValue !== "undefined") ||
+              (AUTO_INVITE_UNLOCKABLE_QUESTS === true && category === "unlockable") ||
+              (AUTO_INVITE_PET_QUESTS === true && ["pet", "hatchingPotion"].includes(category)))));
+        if (canInvite && !AUTO_INVITE_FULLY_COMPLETED_QUESTS) {
+          let questCompletion = questCompletionData.find((q) => q.questKey === questKey);
+          canInvite = canInvite && questCompletion.completionPercentage < 100;
+        }
+
+        if (canInvite) {
           // find the quest in completion data
           let questCompletion = questCompletionData.find(
             (q) => q.questKey === questKey
@@ -90,9 +92,9 @@ function invitePriorityQuest() {
       let hasScroll = userQuestScrolls.has(quest.questKey) ? " *" : "";
       console.log(
         Math.floor(quest.completionPercentage).toString().padStart(3) +
-          "% - " +
-          quest.questName +
-          hasScroll
+        "% - " +
+        quest.questName +
+        hasScroll
       );
     }
     console.log("(* = you have a scroll for this quest)");
@@ -110,16 +112,16 @@ function invitePriorityQuest() {
 
       console.log(
         "Selected: " +
-          selectedQuest.questName +
-          " (completion: " +
-          Math.floor(selectedQuest.completionPercentage) +
-          "%)"
+        selectedQuest.questName +
+        " (completion: " +
+        Math.floor(selectedQuest.completionPercentage) +
+        "%)"
       );
 
       // invite party to the selected quest
       fetch(
         "https://habitica.com/api/v3/groups/party/quests/invite/" +
-          selectedQuest.questKey,
+        selectedQuest.questKey,
         POST_PARAMS
       );
 

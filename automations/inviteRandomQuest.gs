@@ -13,7 +13,6 @@
  */
 function inviteRandomQuest() {
   try {
-
     // delete temporary trigger
     for (let trigger of ScriptApp.getProjectTriggers()) {
       if (trigger.getHandlerFunction() === "inviteRandomQuest") {
@@ -26,17 +25,30 @@ function inviteRandomQuest() {
       return;
     }
 
+    // get quest completion data for the party
+    let questCompletionData = getQuestCompletionData();
+
     // for each quest scroll
     let questScrolls = [];
     for (let [questKey, numScrolls] of Object.entries(getUser().items.quests)) {
       if (numScrolls > 0) {
+        let category = getContent().quests[questKey].category;
 
         // if not excluded by settings
-        let category = getContent().quests[questKey].category;
-        if ((AUTO_INVITE_HOURGLASS_QUESTS === true && category === "timeTravelers") || (category != "timeTravelers" && ((AUTO_INVITE_GOLD_QUESTS === true && typeof content.quests[questKey].goldValue !== "undefined") || (AUTO_INVITE_UNLOCKABLE_QUESTS === true && category === "unlockable") || (AUTO_INVITE_PET_QUESTS === true && ["pet", "hatchingPotion"].includes(category))))) {
+        let canInvite = !BANNED_SCROLLS.includes(content.quests[questKey].text) &&
+          ((AUTO_INVITE_HOURGLASS_QUESTS === true && category === "timeTravelers") ||
+            (category != "timeTravelers" && (
+              (AUTO_INVITE_GOLD_QUESTS === true && typeof content.quests[questKey].goldValue !== "undefined") ||
+              (AUTO_INVITE_UNLOCKABLE_QUESTS === true && category === "unlockable") ||
+              (AUTO_INVITE_PET_QUESTS === true && ["pet", "hatchingPotion"].includes(category)))));
+        if (canInvite && !AUTO_INVITE_FULLY_COMPLETED_QUESTS) {
+          let questCompletion = questCompletionData.find((q) => q.questKey === questKey);
+          canInvite = canInvite && questCompletion.completionPercentage < 100;
+        }
 
+        if (canInvite) {
           // add x number of scrolls to list
-          for (let i=0; i<numScrolls; i++) {
+          for (let i = 0; i < numScrolls; i++) {
             questScrolls.push(questKey);
           }
         }
@@ -55,7 +67,7 @@ function inviteRandomQuest() {
 
       scriptProperties.deleteProperty("QUEST_SCROLL_PM_SENT");
     }
-    
+
     // send player a PM if they are out of usable quest scrolls
     if (PM_WHEN_OUT_OF_QUEST_SCROLLS === true && questScrolls.length <= 1 && scriptProperties.getProperty("QUEST_SCROLL_PM_SENT") === null) {
 

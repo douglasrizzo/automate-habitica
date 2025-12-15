@@ -30,6 +30,20 @@ You can configure which quest categories to auto-invite using these settings:
 - `AUTO_INVITE_UNLOCKABLE_QUESTS` - Quests unlocked by completing other quests
 - `AUTO_INVITE_PET_QUESTS` - Quests that reward pet eggs or hatching potions
 - `AUTO_INVITE_HOURGLASS_QUESTS` - Quests purchasable with hourglasses
+- `AUTO_INVITE_FULLY_COMPLETED_QUESTS` - If set to `false`, quests that have reached 100% party completion will be skipped. This is useful if your party wants to focus only on incomplete quests. Defaults to `true`.
+
+#### Banned Scrolls (`BANNED_SCROLLS`)
+
+You can blacklist specific quests from being auto-invited by adding their names to the `BANNED_SCROLLS` array. This works for both random and priority invite modes.
+
+To ban a quest, uncomment (remove the `//` before) the quest name in the `BANNED_SCROLLS` list in the script settings. For example:
+
+```javascript
+BANNED_SCROLLS = [
+  "The Basi-List", // This quest is banned (no //)
+  // "The Feral Dust Bunnies", // This quest is NOT banned (has //)
+];
+```
 
 #### Quest Selection Mode (`QUEST_INVITE_MODE`)
 
