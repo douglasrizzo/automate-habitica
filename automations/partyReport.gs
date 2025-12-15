@@ -11,7 +11,7 @@ function partyReport() {
   if (lastReportTime) {
     let daysSinceLastReport =
       (new Date().getTime() - new Date(lastReportTime).getTime()) /
-      (1000 * 60 * 60 * 24);
+      MS_PER_DAY;
     if (daysSinceLastReport < PARTY_REPORT_INTERVAL_DAYS) {
       console.log(
         "Party report sent " +
@@ -97,8 +97,7 @@ function generateQuestRecommendationsMessage(partyMembers, contentData) {
   }
 
   // build bullet list
-  let emojis = ["🎯", "⚔️", "🗡️", "🐉", "🏰", "🧙", "🦄", "🔮", "✨", "🌟", "💎", "🏆", "📜", "🎲", "🧭"];
-  let randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+  let randomEmoji = REPORT_EMOJIS[Math.floor(Math.random() * REPORT_EMOJIS.length)];
 
   let lines = [];
   lines.push(
@@ -109,18 +108,18 @@ function generateQuestRecommendationsMessage(partyMembers, contentData) {
     "[How completion % is calculated](https://github.com/douglasrizzo/automate-habitica#quest-completion-percentage)"
   );
   lines.push("");
-  lines.push("Player names = up to 3 random party members with a scroll.");
+  lines.push("Player names = up to " + MAX_SCROLL_OWNERS_DISPLAY + " random party members with a scroll.");
   lines.push("");
 
   for (let quest of recommendedQuests) {
     let percentage = Math.floor(quest.completionPercentage) + "%";
     let owners = questScrollOwners[quest.questKey];
 
-    // randomly select up to 3 owners (no bold)
+    // randomly select up to MAX_SCROLL_OWNERS_DISPLAY owners (no bold)
     let displayOwners = [];
     if (owners.length > 0) {
       let shuffled = owners.slice().sort(() => Math.random() - 0.5);
-      displayOwners = shuffled.slice(0, 3);
+      displayOwners = shuffled.slice(0, MAX_SCROLL_OWNERS_DISPLAY);
     }
     let ownersPart =
       displayOwners.length > 0 ? " (" + displayOwners.join(", ") + ")" : "";

@@ -1,56 +1,4 @@
 /**
- * hatchFeedPets - Auto Hatch/Feed Pets Automation
- *
- * This file contains both hatching/feeding strategies:
- * - hatchFeedPets(): Conservative strategy - only hatches/feeds when you have enough for ALL
- * - hatchFeedPetsPriority(): Priority strategy - hatches/feeds immediately using priority order
- *
- * The active strategy is determined by the HATCH_FEED_MODE setting in setup.gs.
- */
-
-/*************************************\
- *           CONSTANTS               *
-\*************************************/
-
-/**
- * Food points gained per feeding:
- * FOOD_POINTS_FAVORITE: Points when feeding a basic color pet its favorite food (+5)
- * FOOD_POINTS_NON_FAVORITE: Points when feeding a basic color pet non-favorite food (+2)
- * FOOD_POINTS_MAGIC_POTION_PET: Points when feeding magic potion pets any food (+5, no preferences)
- */
-const FOOD_POINTS_FAVORITE = 5;
-const FOOD_POINTS_NON_FAVORITE = 2;
-const FOOD_POINTS_MAGIC_POTION_PET = 5;
-
-/**
- * Pet evolution thresholds:
- * MOUNT_THRESHOLD: Total food points needed for a pet to become a mount
- * NEWLY_HATCHED_FED: Starting fed amount when a pet is first hatched
- * HUNGER_AFTER_HATCH: Hunger remaining after hatching (MOUNT_THRESHOLD - NEWLY_HATCHED_FED)
- */
-const MOUNT_THRESHOLD = 50;
-const NEWLY_HATCHED_FED = 5;
-const HUNGER_AFTER_HATCH = MOUNT_THRESHOLD - NEWLY_HATCHED_FED; // 45
-
-/**
- * Feeding calculations:
- * FEEDINGS_TO_MOUNT_FAVORITE: Number of favorite food feedings to raise a pet to mount
- * FEEDINGS_TO_MOUNT_NON_FAVORITE: Number of non-favorite food feedings needed
- * NON_FAVORITE_TO_FAVORITE_RATIO: Multiplier to convert favorite feeding counts to non-favorite
- */
-const FEEDINGS_TO_MOUNT_FAVORITE = Math.ceil(HUNGER_AFTER_HATCH / FOOD_POINTS_FAVORITE); // 9
-const FEEDINGS_TO_MOUNT_NON_FAVORITE = Math.ceil(HUNGER_AFTER_HATCH / FOOD_POINTS_NON_FAVORITE); // 23
-const NON_FAVORITE_TO_FAVORITE_RATIO = FEEDINGS_TO_MOUNT_NON_FAVORITE / FEEDINGS_TO_MOUNT_FAVORITE;
-
-/**
- * Resource requirements per pet type:
- * RESOURCES_PER_NON_WACKY: Eggs/potions needed per non-wacky pet (1 for pet + 1 for mount = 2)
- * RESOURCES_PER_WACKY: Eggs/potions needed per wacky pet (1 for pet only, can't become mount)
- */
-const RESOURCES_PER_NON_WACKY = 2;
-const RESOURCES_PER_WACKY = 1;
-
-/**
  * Hatching priority groups for priority strategy (lower = higher priority):
  * Used to determine which pets to hatch first when resources are limited.
  */
@@ -70,10 +18,6 @@ const FEED_PRIORITY = {
   BASIC_COLOR: 1,       // Basic color pets - fed with favorite foods (+5 per feeding)
   MAGIC_POTION: 2,      // Magic potion pets - fed with any food (+5 per feeding)
 };
-
-/*************************************\
- *     CONSERVATIVE STRATEGY         *
-\*************************************/
 
 /**
  * Conservative strategy for hatching and feeding pets.
@@ -416,10 +360,6 @@ function feedExtraFoodConservative(
   }
   return false;
 }
-
-/*************************************\
- *       PRIORITY STRATEGY           *
-\*************************************/
 
 /**
  * Priority-based pet hatching and feeding strategy.

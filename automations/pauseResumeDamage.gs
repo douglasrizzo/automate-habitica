@@ -16,7 +16,7 @@ function pauseResumeDamage(questKey) {
   if (quest) {
     boss = getContent().quests[quest].boss;
   }
-  let bossStr = 4;
+  let bossStr = DEFAULT_BOSS_STR;
   if (typeof boss !== "undefined") {
     bossStr = boss.str;
   }
@@ -35,10 +35,10 @@ function pauseResumeDamage(questKey) {
       }
 
       // calculate value
-      let taskValue = Math.min(Math.max(daily.value, -47.27), 21.27);
+      let taskValue = Math.min(Math.max(daily.value, TASK_VALUE_MIN), TASK_VALUE_MAX);
 
       // calculate damage value
-      let delta = Math.abs(Math.pow(0.9747, taskValue));
+      let delta = Math.abs(Math.pow(DAMAGE_CALC_EXPONENT, taskValue));
       if (daily.checklist.length > 0) {
         let subtasksDone = 0;
         for (let subtask of daily.checklist) {
@@ -55,21 +55,21 @@ function pauseResumeDamage(questKey) {
         // calculate damage to party
         let bossDelta = delta;
         if (daily.priority < 1) {
-            bossDelta *= daily.priority;
+          bossDelta *= daily.priority;
         }
         damageToParty += bossDelta * bossStr;
       }
 
       // calculate damage to player
-      damageToPlayer += Math.round(delta * daily.priority * 2 * Math.max(0.1, 1 - (con / 250)) * 10) / 10;
+      damageToPlayer += Math.round(delta * daily.priority * PLAYER_DAMAGE_MULTIPLIER * Math.max(MIN_CON_REDUCTION, 1 - (con / CON_DAMAGE_DIVISOR)) * DAMAGE_ROUNDING_PRECISION) / DAMAGE_ROUNDING_PRECISION;
     }
   }
 
   // add up & round damage values
-  let damageTotal = Math.ceil((damageToPlayer + damageToParty) * 10) / 10;
-  damageToPlayer = Math.ceil(damageToPlayer  * 10) / 10;
+  let damageTotal = Math.ceil((damageToPlayer + damageToParty) * DAMAGE_ROUNDING_PRECISION) / DAMAGE_ROUNDING_PRECISION;
+  damageToPlayer = Math.ceil(damageToPlayer * DAMAGE_ROUNDING_PRECISION) / DAMAGE_ROUNDING_PRECISION;
   if (typeof getMembers(true) !== "undefined" && members.length > 1) {
-    damageToParty = Math.ceil(damageToParty * 10) / 10;
+    damageToParty = Math.ceil(damageToParty * DAMAGE_ROUNDING_PRECISION) / DAMAGE_ROUNDING_PRECISION;
   } else {
     damageToParty = 0;
   }
@@ -82,7 +82,7 @@ function pauseResumeDamage(questKey) {
   if (typeof boss !== "undefined") {
 
     // get lowest party member health
-    let lowestHealth = 50;
+    let lowestHealth = MAX_HP;
     for (let member of members || []) {
       if (member.stats.hp < lowestHealth) {
         lowestHealth = member.stats.hp;
@@ -96,7 +96,7 @@ function pauseResumeDamage(questKey) {
       wakeUp();
     }
 
-  // if on a collection quest or not on a quest
+    // if on a collection quest or not on a quest
   } else {
 
     // if damage to player greater than threshold or hp, sleep, otherwise wake up

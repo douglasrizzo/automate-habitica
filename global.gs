@@ -121,8 +121,8 @@ function processTrigger() {
   let now = new Date();
   let properties = scriptProperties.getProperties();
   let timezoneOffset =
-    now.getTimezoneOffset() * 60 * 1000 -
-    getUser().preferences.timezoneOffset * 60 * 1000;
+    now.getTimezoneOffset() * MS_PER_MINUTE -
+    getUser().preferences.timezoneOffset * MS_PER_MINUTE;
   let nowAdjusted = new Date(now.getTime() + timezoneOffset);
   let dayStart = user.preferences.dayStart;
   let dayStartAdjusted = dayStart === 0 ? 24 : dayStart;
@@ -234,7 +234,7 @@ function processWebhook(webhookData) {
     }
     if (
       AUTO_PURCHASE_GEMS === true &&
-      (typeof webhookData.gp === "undefined" || webhookData.gp >= 20)
+      (typeof webhookData.gp === "undefined" || webhookData.gp >= GOLD_PER_GEM)
     ) {
       scriptProperties.setProperty("purchaseGems", "true");
     }
@@ -244,7 +244,7 @@ function processWebhook(webhookData) {
     if (
       AUTO_PURCHASE_ARMOIRES === true &&
       (typeof webhookData.gp === "undefined" ||
-        webhookData.gp >= RESERVE_GOLD + 100)
+        webhookData.gp >= RESERVE_GOLD + ARMOIRE_COST)
     ) {
       scriptProperties.setProperty(
         "purchaseArmoires",
@@ -290,7 +290,7 @@ function processWebhook(webhookData) {
       (typeof webhookData.lvl === "undefined" ||
         ((typeof webhookData.statPoints === "undefined" ||
           webhookData.statPoints > 0) &&
-          webhookData.lvl >= 10))
+          webhookData.lvl >= STAT_ALLOCATION_MIN_LEVEL))
     ) {
       scriptProperties.setProperty(
         "allocateStatPoints",
@@ -299,7 +299,7 @@ function processWebhook(webhookData) {
     }
     if (
       AUTO_PAUSE_RESUME_DAMAGE === true &&
-      (typeof webhookData.lvl === "undefined" || webhookData.lvl <= 100)
+      (typeof webhookData.lvl === "undefined" || webhookData.lvl <= LEVEL_CAP_FOR_BONUSES)
     ) {
       scriptProperties.setProperty("pauseResumeDamage", "true");
     }
@@ -355,7 +355,7 @@ function processWebhook(webhookData) {
           ScriptApp.deleteTrigger(trigger);
         }
       }
-      let afterMs = Math.random() * 600000 + 300000;
+      let afterMs = Math.random() * QUEST_INVITE_RANDOM_DELAY_MS + QUEST_INVITE_MIN_DELAY_MS;
       ScriptApp.newTrigger(inviteFunction).timeBased().after(afterMs).create();
     }
     if (AUTO_PURCHASE_ARMOIRES === true) {
@@ -409,7 +409,7 @@ function processQueue() {
   try {
     // prevent multiple instances from running at once
     let lock = LockService.getScriptLock();
-    if (lock.tryLock(0) || (installing && lock.tryLock(360000))) {
+    if (lock.tryLock(0) || (installing && lock.tryLock(INSTALL_LOCK_TIMEOUT_MS))) {
       while (true) {
         let properties = scriptProperties.getProperties();
         if (properties.hasOwnProperty("hideAllNotifications")) {
@@ -589,7 +589,7 @@ function interruptLoop() {
     }
     break;
   }
-  if (new Date().getTime() - scriptStart > 270000) {
+  if (new Date().getTime() - scriptStart > SCRIPT_TIMEOUT_MS) {
     return true;
   }
 }
@@ -734,10 +734,10 @@ function fetch(url, params) {
         apiResponseTime = new Date().getTime() - beforeCalling.getTime();
         break;
 
-        // if address unavailable, wait 5 seconds & try again
+        // if address unavailable, wait and try again
       } catch (e) {
         if (!webhook && e.stack.includes("Address unavailable")) {
-          Utilities.sleep(5000);
+          Utilities.sleep(SERVER_RETRY_DELAY_MS);
         } else {
           throw e;
         }
@@ -750,7 +750,7 @@ function fetch(url, params) {
 
     // if success, return response
     if (
-      response.getResponseCode() < 300 ||
+      response.getResponseCode() < HTTP_SUCCESS_MAX ||
       (response.getResponseCode() === 404 &&
         (url === "https://habitica.com/api/v3/groups/party" ||
           url.startsWith("https://habitica.com/api/v3/groups/party/members")))
@@ -758,11 +758,11 @@ function fetch(url, params) {
       return response;
 
       // if rate limited due to running multiple scripts, try again
-    } else if (response.getResponseCode() === 429) {
+    } else if (response.getResponseCode() === HTTP_RATE_LIMITED) {
       i--;
 
       // if 3xx or 4xx or failed 3 times, throw exception
-    } else if (response.getResponseCode() < 500 || i >= 2) {
+    } else if (response.getResponseCode() < HTTP_SERVER_ERROR_MIN || i >= 2) {
       throw new Error(
         "Request failed for https://habitica.com returned code " +
         response.getResponseCode() +
@@ -782,11 +782,11 @@ function fetch(url, params) {
 function getTotalStat(stat) {
   // INT is easy to calculate with a simple formula
   if (stat == "int") {
-    return (getUser(true).stats.maxMP - 30) / 2;
+    return (getUser(true).stats.maxMP - BASE_MANA) / 2;
   }
 
   // calculate stat from level, buffs, allocated
-  let levelStat = Math.min(Math.floor(getUser(true).stats.lvl / 2), 50);
+  let levelStat = Math.min(Math.floor(getUser(true).stats.lvl / 2), MAX_LEVEL_STAT_BONUS);
   let equipmentStat = 0;
   let buffsStat = user.stats.buffs[stat];
   let allocatedStat = user.stats[stat];
@@ -822,7 +822,7 @@ function calculatePerfectDayBuff() {
       return 0;
     }
   }
-  return Math.min(Math.ceil(getUser().stats.lvl / 2), 50);
+  return Math.min(Math.ceil(getUser().stats.lvl / 2), MAX_LEVEL_STAT_BONUS);
 }
 
 /**
@@ -861,7 +861,7 @@ function getUser(updated) {
       }
     }
     let savedPlayerClass = scriptProperties.getProperty("PLAYER_CLASS");
-    playerClass = user.stats.class;
+    let playerClass = user.stats.class;
     if (playerClass == "wizard") {
       playerClass = "mage";
     }
@@ -1176,7 +1176,7 @@ function getQuestCompletionData() {
     let totalNeeded = 0;
 
     if (rewards.length > 0 && rewards[0].type == "egg") {
-      neededIndividual = 20 / rewards[0].qty;
+      neededIndividual = EGGS_FOR_COMPLETE_SPECIES / rewards[0].qty;
       for (let member of partyMembers) {
         if (typeof member.numEachEggOwnedUsed[rewards[0].key] === "undefined") {
           member.numEachEggOwnedUsed[rewards[0].key] = 0;
@@ -1196,9 +1196,9 @@ function getQuestCompletionData() {
       (rewards[0].type == "hatchingPotion" || rewards[0].type == "wackyPotion")
     ) {
       if (rewards[0].type == "hatchingPotion") {
-        neededIndividual = 18 / rewards[0].qty;
+        neededIndividual = POTIONS_FOR_COMPLETE_PREMIUM / rewards[0].qty;
       } else {
-        neededIndividual = 9 / rewards[0].qty;
+        neededIndividual = POTIONS_FOR_COMPLETE_WACKY / rewards[0].qty;
       }
       for (let member of partyMembers) {
         if (
@@ -1282,7 +1282,7 @@ function reenableWebhooks() {
         // add webhook tasks to the queue
         let enabledTypes = [];
         if (webhook.hasOwnProperty("options")) {
-          for ([option, enabled] of Object.entries(webhook.options)) {
+          for (const [option, enabled] of Object.entries(webhook.options)) {
             if (enabled === true) {
               enabledTypes.push(option);
             }
@@ -1297,7 +1297,7 @@ function reenableWebhooks() {
         ) {
           enabledTypes.push("leveledUp");
         }
-        for (type of enabledTypes) {
+        for (const type of enabledTypes) {
           console.log("Adding " + type + " webhook tasks to the queue...");
 
           processWebhook({ webhookType: type });

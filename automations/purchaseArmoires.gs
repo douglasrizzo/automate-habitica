@@ -16,7 +16,7 @@ function purchaseArmoires(gold) {
   if (typeof gold === "undefined") {
     gold = getUser(true).stats.gp;
   }
-  let numArmoires = Math.max(Math.floor((gold - RESERVE_GOLD) / 100), 0);
+  let numArmoires = Math.max(Math.floor((gold - RESERVE_GOLD) / ARMOIRE_COST), 0);
 
   console.log("Player gold: " + gold);
   console.log("Gold reserve: " + RESERVE_GOLD);
@@ -26,7 +26,7 @@ function purchaseArmoires(gold) {
   if (numArmoires > 0) {
 
     // buy armoires
-    for (let i=0; i<numArmoires; i++) {
+    for (let i = 0; i < numArmoires; i++) {
       fetch("https://habitica.com/api/v3/user/buy-armoire", POST_PARAMS);
       if (interruptLoop()) {
         break;
