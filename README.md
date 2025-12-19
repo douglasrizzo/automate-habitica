@@ -47,74 +47,34 @@ BANNED_SCROLLS = [
 
 #### Quest Selection Mode (`QUEST_INVITE_MODE`)
 
+When a quest ends, the script waits **5-15 minutes** before sending the next quest invite. The initial 5-minute delay gives all party members the same time to manually send invitations to their favorite quests, while the variable 10-minute wait period prevents multiple party members from sending simultaneous quest invitations.
+
 The `QUEST_INVITE_MODE` setting controls how the script chooses which quest to invite:
 
-| Mode         | Description                                                                                                                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `"random"`   | Selects a random quest scroll from your eligible quests. This is the classic behavior.                                                                                                            |
-| `"priority"` | Selects the quest with the **lowest party completion percentage**. This helps your party work towards completing all quests together, prioritizing quests that fewer party members have finished. |
+- `"random"` mode
+  - Selects a random quest scroll from your eligible quests.
+  - Sends the invite after a random delay between 5-15 minutes.
+- `"priority"` mode
+  - Selects the quest with the **lowest [quest completion percentage](#quest-completion-percentage)**. This helps your party work towards completing all quests together, prioritizing quests that fewer party members have finished.
+  - If `PRIORITY_DELAY_MODE = true`:
+    - Send the invite a after a delay which is linearly proportional to [quest completion percentage](#quest-completion-percentage):
+      - 0% completion -> 5 minutes
+      - 100% completion -> 15 minutes
+  - Else, the behavior is the same as in `"random"` mode.
 
-#### Quest Invite Timing
+<details>
+<summary>A note on fairness</summary>
 
-When a quest ends, the script waits **5-15 minutes** before sending the next quest invite. This delay serves two purposes:
+If you are worried about fairness in the quest invite process, consider that, while random mode gives all players an equal chance of inviting the party to a quest:
 
-1. **Courtesy window**: Gives party members without scripts 5 minutes to manually invite their own quests
-2. **Conflict prevention**: Prevents multiple party members from sending simultaneous quest invitations
+1. It does not allow party members to select which invitation they will send. This is what the initial delay is for.
+1. Habitica offers no achievements or benefits for being the party member who starts a quest. The person who sends the invite gains nothing over those who simply accept it.
+1. The only apparent benefit of random mode is that it makes party members spend their quest scrolls equally. However, this argument doesn't hold up: players who spend more scrolls still receive the full individual rewards from those quests.
+   Scrolls are simply traded for rewards, there is no benefit to hoarding them. In fact, priority mode allows players with rarer scrolls to convert them into rewards while sharing those rewards with the entire party.
 
-The timing behavior differs between modes:
+This makes priority mode objectively better: it systematically completes quests that fewer members have finished, maximizes reward distribution across the party, and ensures no scroll sits unused in anyone's inventory.
 
-| Mode         | Delay Calculation                                       | Effect                                             |
-| ------------ | ------------------------------------------------------- | -------------------------------------------------- |
-| `"random"`   | Random delay between 5-15 minutes                       | All scripts have equal chance of inviting first    |
-| `"priority"` | `delay = 5 + (completionPercentage / 100) × 10` minutes | Lower completion % → shorter delay → invites first |
-
-**How Priority Mode Timing Works:**
-
-In priority mode, the invite delay is directly proportional to the quest's party completion percentage:
-
-```mermaid
----
-displayMode: compact
----
-gantt
-    title Quest Invite Timing (minutes after quest ends)
-    dateFormat mm:ss
-    axisFormat %M
-
-    section Courtesy Window
-    Manual invites only            :crit, courtesy, 00:00, 05:00
-
-    section Random Mode
-    Uniform sampling (5-15 min)    :active, 05:00, 15:00
-
-    section Priority Mode
-    00% completion                  :milestone, m0, 05:00, 0
-    25% completion                 :milestone, m25, 07:30, 0
-    50% completion                 :milestone, m50, 10:00, 0
-    75% completion                 :milestone, m75, 12:30, 0
-    100% completion                :milestone, m100, 15:00, 0
-
-    section Example (from table)
-    Alice (The Sabre Cat, 15%)     :milestone, alice, 06:30, 0
-    Bob (A Tangled Yarn, 45%)      :milestone, bob, 09:30, 0
-    Carol (The Basi-List, 80%)     :milestone, carol, 13:00, 0
-```
-
-**Reading the chart:**
-
-- **Courtesy Window**: First 5 minutes where no script sends invites, allowing manual quest invitations
-- **Random Mode**: Scripts sample uniformly from the entire 5-15 minute range
-- **Priority Mode**: The invite delay scales with completion % (lower completion = earlier invite)
-
-**Key insight**: When multiple party members run the script in priority mode, the member holding a scroll for the quest with the **lowest completion percentage** will have the **shortest delay**, ensuring they invite first. This creates a natural coordination mechanism across the party.
-
-**Example scenario with 3 party members using priority mode:**
-
-| Member | Quest Scroll Held | Completion % | Invite Delay |
-| ------ | ----------------- | ------------ | ------------ |
-| Alice  | The Sabre Cat     | 15%          | 6.5 min      |
-| Bob    | A Tangled Yarn    | 45%          | 9.5 min      |
-| Carol  | The Basi-list     | 80%          | 13.0 min     |
+</details>
 
 ### Party Report
 

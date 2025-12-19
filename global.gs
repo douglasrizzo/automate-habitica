@@ -358,7 +358,7 @@ function processWebhook(webhookData) {
 
       // in priority mode, quests with higher priority will have invites sent sooner
       let waitTime = 0;
-      if (QUEST_INVITE_MODE === "priority") {
+      if (QUEST_INVITE_MODE === "priority" && PRIORITY_DELAY_MODE === true) {
         let selectedQuest = selectPriorityQuest();
         if (selectedQuest !== null) {
           waitTime = selectedQuest.completionPercentage / 100;
@@ -389,9 +389,9 @@ function processWebhook(webhookData) {
     if (AUTO_HATCH_FEED_PETS === true) {
       scriptProperties.setProperty("hatchFeedPets", "true");
     }
-
-    // when a chat notification is received
-  } else if (webhookData.webhookType == "groupChatReceived") {
+  }
+  // when a chat notification is received
+  else if (webhookData.webhookType == "groupChatReceived") {
     if (webhookData.groupId === scriptProperties.getProperty("PARTY_ID")) {
       if (HIDE_PARTY_NOTIFICATIONS === true) {
         let triggerNeeded = true;

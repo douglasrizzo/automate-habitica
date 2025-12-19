@@ -26,6 +26,7 @@ const AUTO_INVITE_PET_QUESTS = false;
 const AUTO_INVITE_HOURGLASS_QUESTS = false;
 const AUTO_INVITE_FULLY_COMPLETED_QUESTS = true;
 const QUEST_INVITE_MODE = "priority"; // "random" or "priority" (priority selects quest with lowest party completion %)
+const PRIORITY_DELAY_MODE = false;
 const PM_WHEN_OUT_OF_QUEST_SCROLLS = true;
 
 const NOTIFY_ON_QUEST_END = true;
