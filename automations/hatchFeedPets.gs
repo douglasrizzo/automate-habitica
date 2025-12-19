@@ -306,62 +306,6 @@ function hatchFeedPets() {
 }
 
 /**
- * Feeds a pet with extra food (food not needed for basic color mounts).
- * Used by the conservative strategy.
- * 
- * @param {string} pet - Pet key in format "Species-Color"
- * @param {number} feedingsNeeded - Number of feedings needed to reach mount
- * @param {string} speciesReadable - Human-readable species name
- * @param {string} colorReadable - Human-readable color name
- * @param {Object.<string, number>} foodOwned - Food inventory keyed by food name
- * @param {Object.<string, number>} foodByType - Food totals keyed by target color
- * @param {Object.<string, number>} numEachFoodTypeNeeded - Food needed per color
- * @param {Object} contentData - Habitica content data from API
- * @returns {boolean} True if pet became a mount
- */
-function feedExtraFoodConservative(
-  pet,
-  feedingsNeeded,
-  speciesReadable,
-  colorReadable,
-  foodOwned,
-  foodByType,
-  numEachFoodTypeNeeded,
-  contentData
-) {
-  // sort foods by amount owned (highest first)
-  let foodsSorted = Object.entries(foodOwned).sort((a, b) => b[1] - a[1]);
-
-  // for each food in sorted list
-  for (let [food, amount] of foodsSorted) {
-    // check if this food is "extra" (not needed for basic mounts)
-    let target = contentData.food[food].target;
-    let extra = foodByType[target] - numEachFoodTypeNeeded[target];
-    if (extra > 0) {
-      // calculate feedings
-      let feedings = Math.min(feedingsNeeded, amount, extra);
-
-      // feed this food
-      feedPet(pet, food, feedings, speciesReadable, colorReadable);
-
-      // update data
-      feedingsNeeded -= feedings;
-      foodOwned[food] -= feedings;
-      if (foodOwned[food] <= 0) {
-        delete foodOwned[food];
-      }
-      foodByType[target] -= feedings;
-
-      // stop feeding if full
-      if (feedingsNeeded <= 0) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-/**
  * Priority-based pet hatching and feeding strategy.
  * 
  * Hatching priority (in order):
@@ -560,6 +504,66 @@ function hatchFeedPetsPriority() {
   }
 }
 
+/*************************************\
+ *        HELPER FUNCTIONS           *
+\*************************************/
+
+/**
+ * Feeds a pet with extra food (food not needed for basic color mounts).
+ * Used by the conservative strategy.
+ * 
+ * @param {string} pet - Pet key in format "Species-Color"
+ * @param {number} feedingsNeeded - Number of feedings needed to reach mount
+ * @param {string} speciesReadable - Human-readable species name
+ * @param {string} colorReadable - Human-readable color name
+ * @param {Object.<string, number>} foodOwned - Food inventory keyed by food name
+ * @param {Object.<string, number>} foodByType - Food totals keyed by target color
+ * @param {Object.<string, number>} numEachFoodTypeNeeded - Food needed per color
+ * @param {Object} contentData - Habitica content data from API
+ * @returns {boolean} True if pet became a mount
+ */
+function feedExtraFoodConservative(
+  pet,
+  feedingsNeeded,
+  speciesReadable,
+  colorReadable,
+  foodOwned,
+  foodByType,
+  numEachFoodTypeNeeded,
+  contentData
+) {
+  // sort foods by amount owned (highest first)
+  let foodsSorted = Object.entries(foodOwned).sort((a, b) => b[1] - a[1]);
+
+  // for each food in sorted list
+  for (let [food, amount] of foodsSorted) {
+    // check if this food is "extra" (not needed for basic mounts)
+    let target = contentData.food[food].target;
+    let extra = foodByType[target] - numEachFoodTypeNeeded[target];
+    if (extra > 0) {
+      // calculate feedings
+      let feedings = Math.min(feedingsNeeded, amount, extra);
+
+      // feed this food
+      feedPet(pet, food, feedings, speciesReadable, colorReadable);
+
+      // update data
+      feedingsNeeded -= feedings;
+      foodOwned[food] -= feedings;
+      if (foodOwned[food] <= 0) {
+        delete foodOwned[food];
+      }
+      foodByType[target] -= feedings;
+
+      // stop feeding if full
+      if (feedingsNeeded <= 0) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 /**
  * Hatches a replacement pet if resources are available.
  * Called after a pet becomes a mount to immediately hatch another.
@@ -580,10 +584,6 @@ function tryHatchReplacement(species, color, eggsOwned, potionsOwned) {
     potionsOwned[color]--;
   }
 }
-
-/*************************************\
- *        HELPER FUNCTIONS           *
-\*************************************/
 
 /**
  * Checks if there are eggs and potions available for a given species/color.

@@ -355,7 +355,23 @@ function processWebhook(webhookData) {
           ScriptApp.deleteTrigger(trigger);
         }
       }
-      let afterMs = Math.random() * QUEST_INVITE_RANDOM_DELAY_MS + QUEST_INVITE_MIN_DELAY_MS;
+
+      // in priority mode, quests with higher priority will have invites sent sooner
+      let waitTime = 0;
+      if (QUEST_INVITE_MODE === "priority") {
+        let selectedQuest = selectPriorityQuest();
+        if (selectedQuest !== null) {
+          waitTime = selectedQuest.completionPercentage / 100;
+          console.log("Quest scroll with lowest completion: " + selectedQuest.questName + " (" + selectedQuest.completionPercentage.toFixed(2) + "%%)");
+        } else {
+          console.log("No priority quest found");
+        }
+      }
+      if (waitTime === 0) {
+        waitTime = Math.random();
+      }
+      let afterMs = waitTime * QUEST_INVITE_RANDOM_DELAY_MS + QUEST_INVITE_MIN_DELAY_MS;
+      console.log("Waiting " + (afterMs / 1000 / 60).toFixed(3) + " minutes before inviting quest");
       ScriptApp.newTrigger(inviteFunction).timeBased().after(afterMs).create();
     }
     if (AUTO_PURCHASE_ARMOIRES === true) {

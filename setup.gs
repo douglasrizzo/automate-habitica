@@ -1,5 +1,5 @@
 /**
- * Automate Habitica+ v1.1.0 by @tetamusha
+ * Automate Habitica+ v1.2.0 by @tetamusha
  * A fork of Automate Habitica v1.0.0 by @bumbleshoot
  *
  * See GitHub pages for info & setup instructions:

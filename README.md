@@ -54,9 +54,67 @@ The `QUEST_INVITE_MODE` setting controls how the script chooses which quest to i
 | `"random"`   | Selects a random quest scroll from your eligible quests. This is the classic behavior.                                                                                                            |
 | `"priority"` | Selects the quest with the **lowest party completion percentage**. This helps your party work towards completing all quests together, prioritizing quests that fewer party members have finished. |
 
-**How Priority Mode Works:**
+#### Quest Invite Timing
 
-The priority mode uses the [Quest Completion Percentage](#quest-completion-percentage) calculation to determine which quest to invite. The quest with the lowest overall party completion percentage is selected first, ensuring your party focuses on quests where progress is most needed.
+When a quest ends, the script waits **5-15 minutes** before sending the next quest invite. This delay serves two purposes:
+
+1. **Courtesy window**: Gives party members without scripts 5 minutes to manually invite their own quests
+2. **Conflict prevention**: Prevents multiple party members from sending simultaneous quest invitations
+
+The timing behavior differs between modes:
+
+| Mode         | Delay Calculation                                       | Effect                                             |
+| ------------ | ------------------------------------------------------- | -------------------------------------------------- |
+| `"random"`   | Random delay between 5-15 minutes                       | All scripts have equal chance of inviting first    |
+| `"priority"` | `delay = 5 + (completionPercentage / 100) × 10` minutes | Lower completion % → shorter delay → invites first |
+
+**How Priority Mode Timing Works:**
+
+In priority mode, the invite delay is directly proportional to the quest's party completion percentage:
+
+```mermaid
+---
+displayMode: compact
+---
+gantt
+    title Quest Invite Timing (minutes after quest ends)
+    dateFormat mm:ss
+    axisFormat %M
+
+    section Courtesy Window
+    Manual invites only            :crit, courtesy, 00:00, 05:00
+
+    section Random Mode
+    Uniform sampling (5-15 min)    :active, 05:00, 15:00
+
+    section Priority Mode
+    00% completion                  :milestone, m0, 05:00, 0
+    25% completion                 :milestone, m25, 07:30, 0
+    50% completion                 :milestone, m50, 10:00, 0
+    75% completion                 :milestone, m75, 12:30, 0
+    100% completion                :milestone, m100, 15:00, 0
+
+    section Example (from table)
+    Alice (The Sabre Cat, 15%)     :milestone, alice, 06:30, 0
+    Bob (A Tangled Yarn, 45%)      :milestone, bob, 09:30, 0
+    Carol (The Basi-List, 80%)     :milestone, carol, 13:00, 0
+```
+
+**Reading the chart:**
+
+- **Courtesy Window**: First 5 minutes where no script sends invites, allowing manual quest invitations
+- **Random Mode**: Scripts sample uniformly from the entire 5-15 minute range
+- **Priority Mode**: The invite delay scales with completion % (lower completion = earlier invite)
+
+**Key insight**: When multiple party members run the script in priority mode, the member holding a scroll for the quest with the **lowest completion percentage** will have the **shortest delay**, ensuring they invite first. This creates a natural coordination mechanism across the party.
+
+**Example scenario with 3 party members using priority mode:**
+
+| Member | Quest Scroll Held | Completion % | Invite Delay |
+| ------ | ----------------- | ------------ | ------------ |
+| Alice  | The Sabre Cat     | 15%          | 6.5 min      |
+| Bob    | A Tangled Yarn    | 45%          | 9.5 min      |
+| Carol  | The Basi-list     | 80%          | 13.0 min     |
 
 ### Party Report
 
