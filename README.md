@@ -65,14 +65,18 @@ The `QUEST_INVITE_MODE` setting controls how the script chooses which quest to i
 <details>
 <summary>A note on fairness</summary>
 
+---
+
 If you are worried about fairness in the quest invite process, consider that, while random mode gives all players an equal chance of inviting the party to a quest:
 
 1. It does not allow party members to select which invitation they will send. This is what the initial delay is for.
 1. Habitica offers no achievements or benefits for being the party member who starts a quest. The person who sends the invite gains nothing over those who simply accept it.
 1. The only apparent benefit of random mode is that it makes party members spend their quest scrolls equally. However, this argument doesn't hold up: players who spend more scrolls still receive the full individual rewards from those quests.
-   Scrolls are simply traded for rewards, there is no benefit to hoarding them. In fact, priority mode allows players with rarer scrolls to convert them into rewards while sharing those rewards with the entire party.
+   Scrolls are simply traded for rewards, there is no benefit to hoarding them. In fact, priority mode allows players with lots of rare scrolls to use the party's help to convert them into rewards while sharing those rewards with the party.
 
 This makes priority mode objectively better: it systematically completes quests that fewer members have finished, maximizes reward distribution across the party, and ensures no scroll sits unused in anyone's inventory.
+
+---
 
 </details>
 
