@@ -1138,50 +1138,48 @@ function getQuestCompletionData() {
 
   for (let quest of Object.values(content.quests)) {
     // if world boss, skip it
-    if (quest.category == "world") {
+    if (quest.category == "world" || typeof quest.drop.items === "undefined") {
       continue;
     }
 
     // get rewards
     let rewards = [];
-    if (typeof quest.drop.items !== "undefined") {
-      for (let drop of quest.drop.items) {
-        let rewardName = drop.text;
-        let rewardType = "";
+    for (let drop of quest.drop.items) {
+      let rewardName = drop.text;
+      let rewardType = "";
 
-        if (drop.type == "eggs" && premiumEggs.includes(drop.key)) {
-          rewardName = content.eggs[drop.key].text + " Egg";
-          rewardType = "egg";
-        } else if (
-          drop.type == "hatchingPotions" &&
-          premiumHatchingPotions.includes(drop.key)
-        ) {
-          rewardType = "hatchingPotion";
-        } else if (
-          drop.type == "hatchingPotions" &&
-          wackyHatchingPotions.includes(drop.key)
-        ) {
-          rewardType = "wackyPotion";
-        } else if (drop.type == "mounts") {
-          rewardType = "mount";
-        } else if (drop.type == "pets") {
-          rewardType = "pet";
-        } else if (drop.type == "gear") {
-          rewardType = "gear";
-        }
+      if (drop.type == "eggs" && premiumEggs.includes(drop.key)) {
+        rewardName = content.eggs[drop.key].text + " Egg";
+        rewardType = "egg";
+      } else if (
+        drop.type == "hatchingPotions" &&
+        premiumHatchingPotions.includes(drop.key)
+      ) {
+        rewardType = "hatchingPotion";
+      } else if (
+        drop.type == "hatchingPotions" &&
+        wackyHatchingPotions.includes(drop.key)
+      ) {
+        rewardType = "wackyPotion";
+      } else if (drop.type == "mounts") {
+        rewardType = "mount";
+      } else if (drop.type == "pets") {
+        rewardType = "pet";
+      } else if (drop.type == "gear") {
+        rewardType = "gear";
+      }
 
-        if (rewardType != "") {
-          let index = rewards.findIndex((reward) => reward.name == rewardName);
-          if (index == -1) {
-            rewards.push({
-              key: drop.key,
-              name: rewardName,
-              type: rewardType,
-              qty: 1,
-            });
-          } else {
-            rewards[index].qty++;
-          }
+      if (rewardType != "") {
+        let index = rewards.findIndex((reward) => reward.name == rewardName);
+        if (index == -1) {
+          rewards.push({
+            key: drop.key,
+            name: rewardName,
+            type: rewardType,
+            qty: 1,
+          });
+        } else {
+          rewards[index].qty++;
         }
       }
     }
