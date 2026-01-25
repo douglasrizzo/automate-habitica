@@ -3,11 +3,10 @@
  * Used to determine which pets to hatch first when resources are limited.
  */
 const HATCH_PRIORITY = {
-  STANDARD_BASIC: 1,    // Standard pets with basic colors (Base, Red, etc.)
-  STANDARD_MAGIC: 2,    // Standard pets with magic potion colors (Royal Purple, etc.)
-  QUEST: 3,             // Quest reward pets
-  WACKY: 4,             // Wacky potion pets
-  PREMIUM: 5,           // Premium pets (rare edge case)
+  STANDARD_BASIC: 1,    // Standard pets, basic colors (Base, Red, etc.)
+  PREMIUM: 2,           // Standard pets, magic potions (Royal Purple, etc.)
+  QUEST: 2,             // Quest pets, only come in basic colors
+  WACKY: 3,             // Wacky potion pets
 };
 
 /**
@@ -15,8 +14,9 @@ const HATCH_PRIORITY = {
  * Used to determine which pets to feed first.
  */
 const FEED_PRIORITY = {
-  BASIC_COLOR: 1,       // Basic color pets - fed with favorite foods (+5 per feeding)
-  MAGIC_POTION: 2,      // Magic potion pets - fed with any food (+5 per feeding)
+  STANDARD: 1,          // Standard pets, basic colors
+  QUEST: 2,             // Quest pets, only come in basic colors
+  PREMIUM: 3,           // Standard pets, magic potions
 };
 
 /**
@@ -369,20 +369,18 @@ function hatchFeedPetsPriority() {
       let isWacky = petLists.wackyPets.includes(pet);
       let isStandard = standardPetSet.has(pet);
       let isQuest = questPetSet.has(pet);
-      let isBasicColor = basicColors.includes(color);
+      let isPremium = premiumPetSet.includes(pet);
 
       // determine hatching priority group (lower = higher priority)
       let priorityGroup;
-      if (isStandard && isBasicColor) {
+      if (isStandard) {
         priorityGroup = HATCH_PRIORITY.STANDARD_BASIC;
-      } else if (isStandard && !isBasicColor) {
-        priorityGroup = HATCH_PRIORITY.STANDARD_MAGIC;
+      } else if (isPremium) {
+        priorityGroup = HATCH_PRIORITY.PREMIUM;
       } else if (isQuest) {
         priorityGroup = HATCH_PRIORITY.QUEST;
       } else if (isWacky) {
         priorityGroup = HATCH_PRIORITY.WACKY;
-      } else {
-        priorityGroup = HATCH_PRIORITY.PREMIUM;
       }
 
       petsToHatch.push({ pet, species, color, priorityGroup });
@@ -450,11 +448,11 @@ function hatchFeedPetsPriority() {
     // determine feeding priority based on food efficiency
     let feedPriority;
     if (standardPetSet.has(pet)) {
-      feedPriority = isBasicColor ? FEED_PRIORITY.BASIC_COLOR : FEED_PRIORITY.MAGIC_POTION;
-    } else if (questPetSet.has(pet)) {
-      feedPriority = FEED_PRIORITY.BASIC_COLOR; // quest pets have basic colors
+      feedPriority = FEED_PRIORITY.STANDARD;
     } else if (premiumPetSet.has(pet)) {
-      feedPriority = FEED_PRIORITY.MAGIC_POTION; // premium pets use any food
+      feedPriority = FEED_PRIORITY.PREMIUM; // premium pets use any food
+    } else if (questPetSet.has(pet)) {
+      feedPriority = FEED_PRIORITY.QUEST; // quest pets have basic colors
     } else {
       continue; // unknown pet type
     }
