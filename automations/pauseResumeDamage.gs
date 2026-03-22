@@ -119,7 +119,7 @@ function pauseResumeDamage(questKey) {
       fetch("https://habitica.com/api/v3/user/sleep", POST_PARAMS);
 
       // update user data
-      user.preferences.sleep = false;
+      user.preferences.sleep = true;
 
     } else {
 
@@ -140,7 +140,7 @@ function pauseResumeDamage(questKey) {
       fetch("https://habitica.com/api/v3/user/sleep", POST_PARAMS);
 
       // update user data
-      user.preferences.sleep = true;
+      user.preferences.sleep = false;
 
     } else {
 
