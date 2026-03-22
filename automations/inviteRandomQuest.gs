@@ -53,7 +53,7 @@ function inviteRandomQuest() {
     // if list contains scrolls
     if (questScrolls.length > 0) {
 
-      let randomQuestScroll = questScrolls[Math.floor(Math.random() * (questScrolls.length - 1))];
+      let randomQuestScroll = questScrolls[Math.floor(Math.random() * questScrolls.length)];
 
       console.log("Inviting party to " + content.quests[randomQuestScroll].text);
 

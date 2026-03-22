@@ -179,7 +179,7 @@ function burnBossAndDumpMana() {
 
     // cast earthquake
     for (let i = 0; i < numEarthquakes; i++) {
-      fetch("https://habitica.com/api/v3/user/class/cast/mpheal", POST_PARAMS);
+      fetch("https://habitica.com/api/v3/user/class/cast/earth", POST_PARAMS);
       if (interruptLoop()) {
         break;
       }

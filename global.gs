@@ -321,7 +321,9 @@ function processWebhook(webhookData) {
 
     // when a quest is started
   } else if (webhookData.webhookType == "questStarted") {
-    scriptProperties.setProperty("forceStartQuest", "true");
+    if (FORCE_START_QUESTS === true) {
+      scriptProperties.setProperty("forceStartQuest", "true");
+    }
 
     // when a quest is finished
   } else if (webhookData.webhookType == "questFinished") {
@@ -441,7 +443,13 @@ function processQueue() {
         }
         let webhookData = properties["allocateStatPoints"];
         if (typeof webhookData !== "undefined") {
-          allocateStatPoints(webhookData.points, webhookData.lvl);
+          let parsedWebhookData = {};
+          try {
+            parsedWebhookData = JSON.parse(webhookData);
+          } catch (e) {
+            console.log("Failed to parse allocateStatPoints payload, falling back to live user data");
+          }
+          allocateStatPoints(parsedWebhookData.statPoints, parsedWebhookData.lvl);
           scriptProperties.deleteProperty("allocateStatPoints");
           continue;
         }
@@ -726,7 +734,7 @@ function fetch(url, params) {
     }
     if (
       typeof rateLimitRemaining !== "undefined" &&
-      (spaceOutAPICalls || Number(rateLimitRemaining < 1))
+      (spaceOutAPICalls || Number(rateLimitRemaining) < 1)
     ) {
       // space out API calls
       let waitUntil = new Date(rateLimitReset);
@@ -854,7 +862,7 @@ function getUser(updated) {
     for (let i = 0; i < 3; i++) {
       user = fetch("https://habitica.com/api/v3/user", GET_PARAMS);
       try {
-        user = JSON.parse(user).data;
+        user = JSON.parse(user.getContentText()).data;
         if (typeof user.party?._id !== "undefined") {
           scriptProperties.setProperty("PARTY_ID", user.party._id);
         }
@@ -909,7 +917,7 @@ function getTasks() {
     for (let i = 0; i < 3; i++) {
       tasks = fetch("https://habitica.com/api/v3/tasks/user", GET_PARAMS);
       try {
-        tasks = JSON.parse(tasks).data;
+        tasks = JSON.parse(tasks.getContentText()).data;
         break;
       } catch (e) {
         if (
@@ -975,7 +983,7 @@ let party;
 function getParty(updated) {
   if (updated || typeof party === "undefined") {
     party = JSON.parse(
-      fetch("https://habitica.com/api/v3/groups/party", GET_PARAMS)
+      fetch("https://habitica.com/api/v3/groups/party", GET_PARAMS).getContentText()
     ).data;
   }
   return party;
@@ -998,7 +1006,7 @@ function getMembers(updated) {
         GET_PARAMS
       );
       try {
-        members = JSON.parse(members).data;
+        members = JSON.parse(members.getContentText()).data;
         break;
       } catch (e) {
         if (
@@ -1035,7 +1043,7 @@ function getContent(updated) {
     for (let i = 0; i < 3; i++) {
       content = fetch("https://habitica.com/api/v3/content", GET_PARAMS);
       try {
-        content = JSON.parse(content).data;
+        content = JSON.parse(content.getContentText()).data;
         break;
       } catch (e) {
         if (
@@ -1272,7 +1280,7 @@ let reenabling;
 function reenableWebhooks() {
   // for each Automate Habitica webhook
   for (let webhook of JSON.parse(
-    fetch("https://habitica.com/api/v3/user/webhook", GET_PARAMS)
+    fetch("https://habitica.com/api/v3/user/webhook", GET_PARAMS).getContentText()
   ).data) {
     if (webhook.url === WEB_APP_URL) {
       // if disabled

@@ -369,7 +369,7 @@ function hatchFeedPetsPriority() {
       let isWacky = petLists.wackyPets.includes(pet);
       let isStandard = standardPetSet.has(pet);
       let isQuest = questPetSet.has(pet);
-      let isPremium = premiumPetSet.includes(pet);
+      let isPremium = premiumPetSet.has(pet);
 
       // determine hatching priority group (lower = higher priority)
       let priorityGroup;
@@ -400,10 +400,8 @@ function hatchFeedPetsPriority() {
   let currentPriorityGroup = 0;
   let priorityGroupNames = {
     [HATCH_PRIORITY.STANDARD_BASIC]: "standard pets (basic colors)",
-    [HATCH_PRIORITY.STANDARD_MAGIC]: "standard pets (magic potions)",
-    [HATCH_PRIORITY.QUEST]: "quest pets",
+    [HATCH_PRIORITY.PREMIUM]: "premium + quest pets",
     [HATCH_PRIORITY.WACKY]: "wacky pets",
-    [HATCH_PRIORITY.PREMIUM]: "premium pets",
   };
 
   for (let { pet, species, color, priorityGroup } of petsToHatch) {
