@@ -1,7 +1,8 @@
 /**
- * hideAllNotifications()
- * 
  * Hides notifications from all guilds enabled in the settings.
+ * 
+ * @param {boolean} [noLogging] - If true, suppresses console logging
+ * @returns {void}
  */
 function hideAllNotifications(noLogging) {
 
@@ -47,10 +48,11 @@ function hideAllNotifications(noLogging) {
 }
 
 /**
- * hidePartyNotification()
+ * Deletes temporary trigger and hides party notification.
+ * Emails the user if any errors are thrown.
  * 
- * Deletes temporary trigger, hides party notification, 
- * and emails the user if any errors are thrown.
+ * @returns {void}
+ * @throws {Error} Sends email notification and rethrows on failure
  */
 function hidePartyNotification() {
   try {

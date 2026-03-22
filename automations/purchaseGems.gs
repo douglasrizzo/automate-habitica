@@ -1,13 +1,9 @@
 /**
- * purchaseGems()
+ * Buys gems with gold (subscribers only).
+ * Purchases up to monthly limit or amount player can afford.
  * 
- * Buys gems with gold. Number of gems purchased = number 
- * of gems still available for purchase this month, or number 
- * of gems the player can afford, whichever is less.
- * 
- * Run this function just after cron, and whenever the player
- * gains gold: whenever a task is scored, and whenever a quest 
- * is completed: https://habitica.fandom.com/wiki/Gold_Points
+ * @see https://habitica.fandom.com/wiki/Gold_Points
+ * @returns {void}
  */
 function purchaseGems() {
 
@@ -17,7 +13,7 @@ function purchaseGems() {
   if ((plan.dateTerminated && new Date(plan.dateTerminated).getTime() > new Date().getTime()) || plan.dateTerminated === null) {
 
     // calculate number of gems to buy
-    let gemsToBuy = Math.min(24 + plan.consecutive.gemCapExtra - plan.gemsBought, Math.floor(user.stats.gp / 20));
+    let gemsToBuy = Math.min(BASE_GEM_CAP + plan.consecutive.gemCapExtra - plan.gemsBought, Math.floor(user.stats.gp / GOLD_PER_GEM));
 
     // buy gems
     if (gemsToBuy > 0) {

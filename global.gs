@@ -16,19 +16,11 @@ const scriptProperties = PropertiesService.getScriptProperties();
 const scriptStart = new Date().getTime();
 
 /**
- * Pet feeding point values.
- * FOOD_POINTS_FAVORITE: Points gained when feeding a basic color pet its favorite food (+5)
- * FOOD_POINTS_NON_FAVORITE: Points gained when feeding a basic color pet non-favorite food (+2)
- * FOOD_POINTS_MAGIC_POTION_PET: Points gained when feeding magic potion pets any food (+5, since they have no preferences)
- */
-const FOOD_POINTS_FAVORITE = 5;
-const FOOD_POINTS_NON_FAVORITE = 2;
-const FOOD_POINTS_MAGIC_POTION_PET = 5;
-
-/**
- * onTrigger()
- *
- * This function is called by a trigger every 10 mins.
+ * Main trigger handler called every 10 minutes.
+ * Re-enables disabled webhooks and processes the trigger and queue.
+ * 
+ * @returns {void}
+ * @throws {Error} Sends email notification and rethrows on failure
  */
 function onTrigger() {
   try {
@@ -50,9 +42,14 @@ function onTrigger() {
 }
 
 /**
- * doPost(e)
- *
- * This function is called by webhooks.
+ * Webhook handler called by Habitica webhooks.
+ * Processes the webhook data and adds appropriate tasks to the queue.
+ * 
+ * @param {Object} e - Google Apps Script event object
+ * @param {Object} e.postData - POST data from the webhook
+ * @param {string} e.postData.contents - JSON string of webhook payload
+ * @returns {void}
+ * @throws {Error} Sends email notification and rethrows on failure (except Address unavailable)
  */
 let webhook;
 function doPost(e) {
@@ -114,19 +111,18 @@ function doPost(e) {
 }
 
 /**
- * processTrigger()
- *
- * Adds functions to the queue that need to run just before
- * day start, just after day start, just after cron, or
- * periodically.
+ * Adds functions to the queue based on timing and settings.
+ * Handles scheduling for: before cron, after cron, and periodic tasks.
+ * 
+ * @returns {void}
  */
 function processTrigger() {
   // get times
   let now = new Date();
   let properties = scriptProperties.getProperties();
   let timezoneOffset =
-    now.getTimezoneOffset() * 60 * 1000 -
-    getUser().preferences.timezoneOffset * 60 * 1000;
+    now.getTimezoneOffset() * MS_PER_MINUTE -
+    getUser().preferences.timezoneOffset * MS_PER_MINUTE;
   let nowAdjusted = new Date(now.getTime() + timezoneOffset);
   let dayStart = user.preferences.dayStart;
   let dayStartAdjusted = dayStart === 0 ? 24 : dayStart;
@@ -208,9 +204,18 @@ function processTrigger() {
 }
 
 /**
- * processWebhook(webhookData)
- *
- * Adds functions to the queue depending on the webhook data.
+ * Adds functions to the queue based on webhook type and data.
+ * 
+ * @param {Object} webhookData - Parsed webhook data
+ * @param {string} webhookData.webhookType - Type of webhook (scored, leveledUp, questInvited, etc.)
+ * @param {string} [webhookData.taskType] - Type of task scored
+ * @param {boolean} [webhookData.isDue] - Whether the daily was due
+ * @param {number} [webhookData.gp] - Current gold
+ * @param {string} [webhookData.dropType] - Type of drop received
+ * @param {number} [webhookData.lvl] - New level (for leveledUp)
+ * @param {string} [webhookData.questKey] - Quest key (for quest events)
+ * @param {string} [webhookData.groupId] - Group ID (for chat events)
+ * @returns {void}
  */
 function processWebhook(webhookData) {
   // log webhook type
@@ -229,7 +234,7 @@ function processWebhook(webhookData) {
     }
     if (
       AUTO_PURCHASE_GEMS === true &&
-      (typeof webhookData.gp === "undefined" || webhookData.gp >= 20)
+      (typeof webhookData.gp === "undefined" || webhookData.gp >= GOLD_PER_GEM)
     ) {
       scriptProperties.setProperty("purchaseGems", "true");
     }
@@ -239,7 +244,7 @@ function processWebhook(webhookData) {
     if (
       AUTO_PURCHASE_ARMOIRES === true &&
       (typeof webhookData.gp === "undefined" ||
-        webhookData.gp >= RESERVE_GOLD + 100)
+        webhookData.gp >= RESERVE_GOLD + ARMOIRE_COST)
     ) {
       scriptProperties.setProperty(
         "purchaseArmoires",
@@ -285,7 +290,7 @@ function processWebhook(webhookData) {
       (typeof webhookData.lvl === "undefined" ||
         ((typeof webhookData.statPoints === "undefined" ||
           webhookData.statPoints > 0) &&
-          webhookData.lvl >= 10))
+          webhookData.lvl >= STAT_ALLOCATION_MIN_LEVEL))
     ) {
       scriptProperties.setProperty(
         "allocateStatPoints",
@@ -294,7 +299,7 @@ function processWebhook(webhookData) {
     }
     if (
       AUTO_PAUSE_RESUME_DAMAGE === true &&
-      (typeof webhookData.lvl === "undefined" || webhookData.lvl <= 100)
+      (typeof webhookData.lvl === "undefined" || webhookData.lvl <= LEVEL_CAP_FOR_BONUSES)
     ) {
       scriptProperties.setProperty("pauseResumeDamage", "true");
     }
@@ -316,7 +321,9 @@ function processWebhook(webhookData) {
 
     // when a quest is started
   } else if (webhookData.webhookType == "questStarted") {
-    scriptProperties.setProperty("forceStartQuest", "true");
+    if (FORCE_START_QUESTS === true) {
+      scriptProperties.setProperty("forceStartQuest", "true");
+    }
 
     // when a quest is finished
   } else if (webhookData.webhookType == "questFinished") {
@@ -350,7 +357,23 @@ function processWebhook(webhookData) {
           ScriptApp.deleteTrigger(trigger);
         }
       }
-      let afterMs = Math.random() * 600000 + 300000;
+
+      // in priority mode, quests with higher priority will have invites sent sooner
+      let waitTime = 0;
+      if (QUEST_INVITE_MODE === "priority" && PRIORITY_DELAY_MODE === true) {
+        let selectedQuest = selectPriorityQuest();
+        if (selectedQuest !== null) {
+          waitTime = selectedQuest.completionPercentage / 100;
+          console.log("Quest scroll with lowest completion: " + selectedQuest.questName + " (" + selectedQuest.completionPercentage.toFixed(2) + "%%)");
+        } else {
+          console.log("No priority quest found");
+        }
+      }
+      if (waitTime === 0) {
+        waitTime = Math.random();
+      }
+      let afterMs = waitTime * QUEST_INVITE_RANDOM_DELAY_MS + QUEST_INVITE_MIN_DELAY_MS;
+      console.log("Waiting " + (afterMs / 1000 / 60).toFixed(3) + " minutes before inviting quest");
       ScriptApp.newTrigger(inviteFunction).timeBased().after(afterMs).create();
     }
     if (AUTO_PURCHASE_ARMOIRES === true) {
@@ -368,9 +391,9 @@ function processWebhook(webhookData) {
     if (AUTO_HATCH_FEED_PETS === true) {
       scriptProperties.setProperty("hatchFeedPets", "true");
     }
-
-    // when a chat notification is received
-  } else if (webhookData.webhookType == "groupChatReceived") {
+  }
+  // when a chat notification is received
+  else if (webhookData.webhookType == "groupChatReceived") {
     if (webhookData.groupId === scriptProperties.getProperty("PARTY_ID")) {
       if (HIDE_PARTY_NOTIFICATIONS === true) {
         let triggerNeeded = true;
@@ -394,19 +417,17 @@ function processWebhook(webhookData) {
 }
 
 /**
- * processQueue()
- *
- * Loops through the queue, running functions in order of priority,
- * until there are no more functions left in the queue. Script lock
- * ensures only one instance can run the queue at a time. All API
- * calls are kept within the queue (script lock), to prevent
- * collisions.
+ * Processes the task queue in priority order.
+ * Uses script lock to prevent concurrent execution.
+ * All API calls are made within this locked section to prevent collisions.
+ * 
+ * @returns {void}
  */
 function processQueue() {
   try {
     // prevent multiple instances from running at once
     let lock = LockService.getScriptLock();
-    if (lock.tryLock(0) || (installing && lock.tryLock(360000))) {
+    if (lock.tryLock(0) || (installing && lock.tryLock(INSTALL_LOCK_TIMEOUT_MS))) {
       while (true) {
         let properties = scriptProperties.getProperties();
         if (properties.hasOwnProperty("hideAllNotifications")) {
@@ -422,7 +443,13 @@ function processQueue() {
         }
         let webhookData = properties["allocateStatPoints"];
         if (typeof webhookData !== "undefined") {
-          allocateStatPoints(webhookData.points, webhookData.lvl);
+          let parsedWebhookData = {};
+          try {
+            parsedWebhookData = JSON.parse(webhookData);
+          } catch (e) {
+            console.log("Failed to parse allocateStatPoints payload, falling back to live user data");
+          }
+          allocateStatPoints(parsedWebhookData.statPoints, parsedWebhookData.lvl);
           scriptProperties.deleteProperty("allocateStatPoints");
           continue;
         }
@@ -549,12 +576,10 @@ function processQueue() {
 }
 
 /**
- * interruptLoop()
- *
- * Call this function after each iteration of an indefinite
- * loop to check for urgent functions that should interrupt
- * the loop. Returns true if the loop should stop early to
- * avoid timing out or exceeding the URL Fetch limit.
+ * Checks for urgent tasks that should interrupt a long-running loop.
+ * Call after each iteration of an indefinite loop.
+ * 
+ * @returns {boolean|undefined} True if loop should stop early to avoid timeout, undefined otherwise
  */
 function interruptLoop() {
   while (true) {
@@ -588,18 +613,17 @@ function interruptLoop() {
     }
     break;
   }
-  if (new Date().getTime() - scriptStart > 270000) {
+  if (new Date().getTime() - scriptStart > SCRIPT_TIMEOUT_MS) {
     return true;
   }
 }
 
 /**
- * beforeCronSkills()
- *
- * Attack the boss and use up mana that will be lost at cron.
- * Run this function just before the player's day start time,
- * at least 6 mins before day start (max Google Apps Script
- * run time).
+ * Attacks the boss and uses up mana that will be lost at cron.
+ * Run just before day start, at least 6 mins before (max GAS run time).
+ * 
+ * @param {boolean} [retry] - Whether this is a retry attempt after skill not found error
+ * @returns {void}
  */
 function beforeCronSkills(retry) {
   try {
@@ -624,10 +648,11 @@ function beforeCronSkills(retry) {
 }
 
 /**
- * afterCronSkills()
- *
- * Cast buffs until all mana is used up. Run this function
- * just after the player's cron.
+ * Casts buffs until all mana is used up.
+ * Run just after the player's cron.
+ * 
+ * @param {boolean} [retry] - Whether this is a retry attempt after skill not found error
+ * @returns {void}
  */
 function afterCronSkills(retry) {
   try {
@@ -652,11 +677,11 @@ function afterCronSkills(retry) {
 }
 
 /**
- * useExcessMana()
- *
- * Use excess mana to cast buffs. Reserves all mana that
- * will remain after cron, plus enough mana to do 3000
- * damage to the quest boss.
+ * Uses excess mana to cast buffs.
+ * Reserves mana that will remain after cron, plus enough for 3000 boss damage.
+ * 
+ * @param {boolean} [retry] - Whether this is a retry attempt after skill not found error
+ * @returns {void}
  */
 function useExcessMana(retry) {
   try {
@@ -681,13 +706,15 @@ function useExcessMana(retry) {
 }
 
 /**
- * fetch(url, params)
- *
- * Wrapper for Google Apps Script's UrlFetchApp.fetch(url, params):
- * https://developers.google.com/apps-script/reference/url-fetch/url-fetch-app#fetchurl,-params
- *
- * Retries failed API calls up to 2 times, retries for up to 1 min if
- * Habitica's servers are down, & handles Habitica's rate limiting.
+ * Wrapper for UrlFetchApp.fetch with retry logic and rate limiting.
+ * Retries failed API calls up to 2 times, handles server downtime,
+ * and respects Habitica's rate limiting.
+ * 
+ * @see https://developers.google.com/apps-script/reference/url-fetch/url-fetch-app#fetchurl,-params
+ * @param {string} url - The URL to fetch
+ * @param {Object} params - Fetch parameters (method, headers, etc.)
+ * @returns {GoogleAppsScript.URL_Fetch.HTTPResponse} The API response
+ * @throws {Error} On 3xx/4xx errors or after 3 failed attempts for 5xx errors
  */
 let rateLimitRemaining;
 let rateLimitReset;
@@ -707,7 +734,7 @@ function fetch(url, params) {
     }
     if (
       typeof rateLimitRemaining !== "undefined" &&
-      (spaceOutAPICalls || Number(rateLimitRemaining < 1))
+      (spaceOutAPICalls || Number(rateLimitRemaining) < 1)
     ) {
       // space out API calls
       let waitUntil = new Date(rateLimitReset);
@@ -731,10 +758,10 @@ function fetch(url, params) {
         apiResponseTime = new Date().getTime() - beforeCalling.getTime();
         break;
 
-        // if address unavailable, wait 5 seconds & try again
+        // if address unavailable, wait and try again
       } catch (e) {
         if (!webhook && e.stack.includes("Address unavailable")) {
-          Utilities.sleep(5000);
+          Utilities.sleep(SERVER_RETRY_DELAY_MS);
         } else {
           throw e;
         }
@@ -747,7 +774,7 @@ function fetch(url, params) {
 
     // if success, return response
     if (
-      response.getResponseCode() < 300 ||
+      response.getResponseCode() < HTTP_SUCCESS_MAX ||
       (response.getResponseCode() === 404 &&
         (url === "https://habitica.com/api/v3/groups/party" ||
           url.startsWith("https://habitica.com/api/v3/groups/party/members")))
@@ -755,11 +782,11 @@ function fetch(url, params) {
       return response;
 
       // if rate limited due to running multiple scripts, try again
-    } else if (response.getResponseCode() === 429) {
+    } else if (response.getResponseCode() === HTTP_RATE_LIMITED) {
       i--;
 
       // if 3xx or 4xx or failed 3 times, throw exception
-    } else if (response.getResponseCode() < 500 || i >= 2) {
+    } else if (response.getResponseCode() < HTTP_SERVER_ERROR_MIN || i >= 2) {
       throw new Error(
         "Request failed for https://habitica.com returned code " +
         response.getResponseCode() +
@@ -771,20 +798,19 @@ function fetch(url, params) {
 }
 
 /**
- * getTotalStat(stat)
- *
- * Returns the total value of a stat, including level, buffs, allocated,
- * & equipment. Pass the name of the stat you want calculated to the
- * function: "int", "con", "per", or "str".
+ * Returns the total value of a stat including level, buffs, allocated, and equipment.
+ * 
+ * @param {string} stat - The stat to calculate: "int", "con", "per", or "str"
+ * @returns {number} Total stat value
  */
 function getTotalStat(stat) {
   // INT is easy to calculate with a simple formula
   if (stat == "int") {
-    return (getUser(true).stats.maxMP - 30) / 2;
+    return (getUser(true).stats.maxMP - BASE_MANA) / 2;
   }
 
   // calculate stat from level, buffs, allocated
-  let levelStat = Math.min(Math.floor(getUser(true).stats.lvl / 2), 50);
+  let levelStat = Math.min(Math.floor(getUser(true).stats.lvl / 2), MAX_LEVEL_STAT_BONUS);
   let equipmentStat = 0;
   let buffsStat = user.stats.buffs[stat];
   let allocatedStat = user.stats[stat];
@@ -809,10 +835,10 @@ function getTotalStat(stat) {
 }
 
 /**
- * function calculatePerfectDayBuff()
- *
- * Calculates & returns the player's perfect day buff:
- * https://habitica.fandom.com/wiki/Perfect_Day
+ * Calculates the player's perfect day buff.
+ * 
+ * @see https://habitica.fandom.com/wiki/Perfect_Day
+ * @returns {number} Perfect day buff value (0 if any daily is incomplete)
  */
 function calculatePerfectDayBuff() {
   for (let daily of getDailies()) {
@@ -820,15 +846,15 @@ function calculatePerfectDayBuff() {
       return 0;
     }
   }
-  return Math.min(Math.ceil(getUser().stats.lvl / 2), 50);
+  return Math.min(Math.ceil(getUser().stats.lvl / 2), MAX_LEVEL_STAT_BONUS);
 }
 
 /**
- * getUser(updated)
- *
- * Fetches user data from the Habitica API if it hasn't already
- * been fetched during this execution, or if updated is set to
- * true.
+ * Fetches user data from the Habitica API.
+ * Caches the result for subsequent calls within the same execution.
+ * 
+ * @param {boolean} [updated] - Force refresh from API even if cached
+ * @returns {Object} User data object from Habitica API
  */
 let user;
 function getUser(updated) {
@@ -836,7 +862,7 @@ function getUser(updated) {
     for (let i = 0; i < 3; i++) {
       user = fetch("https://habitica.com/api/v3/user", GET_PARAMS);
       try {
-        user = JSON.parse(user).data;
+        user = JSON.parse(user.getContentText()).data;
         if (typeof user.party?._id !== "undefined") {
           scriptProperties.setProperty("PARTY_ID", user.party._id);
         }
@@ -859,7 +885,7 @@ function getUser(updated) {
       }
     }
     let savedPlayerClass = scriptProperties.getProperty("PLAYER_CLASS");
-    playerClass = user.stats.class;
+    let playerClass = user.stats.class;
     if (playerClass == "wizard") {
       playerClass = "mage";
     }
@@ -879,12 +905,11 @@ function getUser(updated) {
 }
 
 /**
- * getTasks()
- *
- * Fetches task data from the Habitica API if it hasn't
- * already been fetched during this execution. Removes
- * challenge tasks, group tasks, and rewards from the
- * task list, and stores daily data in a separate object.
+ * Fetches task data from the Habitica API.
+ * Removes challenge tasks, group tasks, and rewards from the task list.
+ * Caches dailies in a separate object for getDailies().
+ * 
+ * @returns {Object[]} Array of task objects (excludes rewards, challenge, and group tasks)
  */
 let tasks;
 function getTasks() {
@@ -892,7 +917,7 @@ function getTasks() {
     for (let i = 0; i < 3; i++) {
       tasks = fetch("https://habitica.com/api/v3/tasks/user", GET_PARAMS);
       try {
-        tasks = JSON.parse(tasks).data;
+        tasks = JSON.parse(tasks.getContentText()).data;
         break;
       } catch (e) {
         if (
@@ -934,10 +959,10 @@ function getTasks() {
 }
 
 /**
- * getDailies()
- *
- * Fetches daily data from the Habitica API if it hasn't
- * already been fetched during this execution.
+ * Returns daily tasks from cached data.
+ * Fetches from API via getTasks() if not already cached.
+ * 
+ * @returns {Object[]} Array of daily task objects
  */
 let dailies;
 function getDailies() {
@@ -948,28 +973,29 @@ function getDailies() {
 }
 
 /**
- * getParty(updated)
- *
- * Fetches party data from the Habitica API if it hasn't already
- * been fetched during this execution, or if updated is set to
- * true.
+ * Fetches party data from the Habitica API.
+ * Caches the result for subsequent calls within the same execution.
+ * 
+ * @param {boolean} [updated] - Force refresh from API even if cached
+ * @returns {Object} Party data object from Habitica API
  */
 let party;
 function getParty(updated) {
   if (updated || typeof party === "undefined") {
     party = JSON.parse(
-      fetch("https://habitica.com/api/v3/groups/party", GET_PARAMS)
+      fetch("https://habitica.com/api/v3/groups/party", GET_PARAMS).getContentText()
     ).data;
   }
   return party;
 }
 
 /**
- * getMembers(updated)
- *
- * Fetches party member data from the Habitica API if it hasn't
- * already been fetched during this execution, or if updated is
- * set to true.
+ * Fetches party member data from the Habitica API.
+ * Includes all public fields for each member.
+ * Caches the result for subsequent calls within the same execution.
+ * 
+ * @param {boolean} [updated] - Force refresh from API even if cached
+ * @returns {Object[]} Array of party member data objects
  */
 let members;
 function getMembers(updated) {
@@ -980,7 +1006,7 @@ function getMembers(updated) {
         GET_PARAMS
       );
       try {
-        members = JSON.parse(members).data;
+        members = JSON.parse(members.getContentText()).data;
         break;
       } catch (e) {
         if (
@@ -1004,11 +1030,12 @@ function getMembers(updated) {
 }
 
 /**
- * getContent(updated)
- *
- * Fetches content data from the Habitica API if it hasn't already
- * been fetched during this execution, or if updated is set to
- * true.
+ * Fetches Habitica game content data from the API.
+ * Contains all game items, pets, quests, gear, etc.
+ * Caches the result for subsequent calls within the same execution.
+ * 
+ * @param {boolean} [updated] - Force refresh from API even if cached
+ * @returns {Object} Content data object from Habitica API
  */
 let content;
 function getContent(updated) {
@@ -1016,7 +1043,7 @@ function getContent(updated) {
     for (let i = 0; i < 3; i++) {
       content = fetch("https://habitica.com/api/v3/content", GET_PARAMS);
       try {
-        content = JSON.parse(content).data;
+        content = JSON.parse(content.getContentText()).data;
         break;
       } catch (e) {
         if (
@@ -1039,181 +1066,11 @@ function getContent(updated) {
   return content;
 }
 
-// ==================== PET UTILITY FUNCTIONS ====================
-
 /**
- * getPetLists()
- *
- * Returns categorized lists of all hatchable pets from content data.
- * Used by both hatchFeedPets strategies.
- */
-function getPetLists() {
-  let contentData = getContent();
-  let nonWackyNonSpecialPets = Object.keys(contentData.pets)
-    .concat(Object.keys(contentData.premiumPets))
-    .concat(Object.keys(contentData.questPets));
-  let wackyPets = Object.keys(contentData.wackyPets);
-  let allNonSpecialPets = nonWackyNonSpecialPets.concat(wackyPets);
-
-  return {
-    nonWackyNonSpecialPets: nonWackyNonSpecialPets,
-    wackyPets: wackyPets,
-    allNonSpecialPets: allNonSpecialPets,
-  };
-}
-
-/**
- * getBasicColors()
- *
- * Returns an array of basic/drop hatching potion colors.
- * These colors have favorite foods.
- */
-function getBasicColors() {
-  return Object.keys(getContent().dropHatchingPotions);
-}
-
-/**
- * getPetCategorySets()
- *
- * Returns Sets for classifying pets by category:
- * - standardPetSet: standard/drop pets (can have basic or premium colors)
- * - questPetSet: quest reward pets (basic colors only)
- * - premiumPetSet: premium pets (premium colors only)
- */
-function getPetCategorySets() {
-  let contentData = getContent();
-  return {
-    standardPetSet: new Set(Object.keys(contentData.pets)),
-    questPetSet: new Set(Object.keys(contentData.questPets)),
-    premiumPetSet: new Set(Object.keys(contentData.premiumPets)),
-  };
-}
-
-/**
- * getOwnedPets(allNonSpecialPets)
- *
- * Returns an object of owned non-special pets with their fed amounts.
- * Pet amount meanings: 5 = newly hatched, >5 = fed, -1 = mount but no pet
- */
-function getOwnedPets(allNonSpecialPets) {
-  let petsOwned = {};
-  for (let [pet, amount] of Object.entries(getUser().items.pets)) {
-    if (amount > 0 && allNonSpecialPets.includes(pet)) {
-      petsOwned[pet] = amount;
-    }
-  }
-  return petsOwned;
-}
-
-/**
- * getOwnedMounts(allNonSpecialPets)
- *
- * Returns an object of owned non-special mounts.
- */
-function getOwnedMounts(allNonSpecialPets) {
-  let mountsOwned = {};
-  for (let [mount, owned] of Object.entries(getUser().items.mounts)) {
-    if (owned && allNonSpecialPets.includes(mount)) {
-      mountsOwned[mount] = true;
-    }
-  }
-  return mountsOwned;
-}
-
-/**
- * getUsableFood()
- *
- * Returns an object of usable food based on ONLY_USE_DROP_FOOD setting.
- * Excludes Saddles and food with 0 quantity.
- */
-function getUsableFood() {
-  let foodOwned = {};
-  let contentData = getContent();
-  for (let [food, amount] of Object.entries(getUser().items.food)) {
-    if (food !== "Saddle" && amount > 0) {
-      if (ONLY_USE_DROP_FOOD !== true || contentData.food[food].canDrop) {
-        foodOwned[food] = amount;
-      }
-    }
-  }
-  return foodOwned;
-}
-
-/**
- * makeReadable(name)
- *
- * Converts CamelCase names to "Camel Case" format for display.
- */
-function makeReadable(name) {
-  return name.replaceAll(/(?<!^)([A-Z])/g, " $1");
-}
-
-/**
- * hatchPet(species, color)
- *
- * Hatches a pet via the Habitica API.
- * Logs the action and returns the API response.
- */
-function hatchPet(species, color) {
-  let speciesReadable = makeReadable(species);
-  let colorReadable = makeReadable(color);
-  console.log("Hatching " + colorReadable + " " + speciesReadable);
-  return fetch(
-    "https://habitica.com/api/v3/user/hatch/" + species + "/" + color,
-    POST_PARAMS
-  );
-}
-
-/**
- * feedPet(pet, food, amount, speciesReadable, colorReadable)
- *
- * Feeds a pet via the Habitica API.
- * Logs the action and returns the API response.
- */
-function feedPet(pet, food, amount, speciesReadable, colorReadable) {
-  console.log(
-    "Feeding " +
-    colorReadable +
-    " " +
-    speciesReadable +
-    " " +
-    amount +
-    " " +
-    food
-  );
-  return fetch(
-    "https://habitica.com/api/v3/user/feed/" +
-    pet +
-    "/" +
-    food +
-    "?amount=" +
-    amount,
-    POST_PARAMS
-  );
-}
-
-/**
- * getFavoriteFoods(color)
- *
- * Returns an array of food keys that are favorites for the given color.
- */
-function getFavoriteFoods(color) {
-  let favorites = [];
-  let contentData = getContent();
-  for (let [foodKey, foodData] of Object.entries(contentData.food)) {
-    if (foodKey !== "Saddle" && foodData.target === color) {
-      favorites.push(foodKey);
-    }
-  }
-  return favorites;
-}
-
-/**
- * getQuestCompletionData()
- *
  * Calculates quest completion percentages for the party.
- * Returns an array of quest objects with questKey and completionPercentage.
  * Adapted from Quest Tracker by @bumbleshoot.
+ * 
+ * @returns {{questKey: string, questName: string, completionPercentage: number}[]} Array of quest completion data
  */
 function getQuestCompletionData() {
   // if no party, party = user
@@ -1289,50 +1146,48 @@ function getQuestCompletionData() {
 
   for (let quest of Object.values(content.quests)) {
     // if world boss, skip it
-    if (quest.category == "world") {
+    if (quest.category == "world" || typeof quest.drop.items === "undefined") {
       continue;
     }
 
     // get rewards
     let rewards = [];
-    if (typeof quest.drop.items !== "undefined") {
-      for (let drop of quest.drop.items) {
-        let rewardName = drop.text;
-        let rewardType = "";
+    for (let drop of quest.drop.items) {
+      let rewardName = drop.text;
+      let rewardType = "";
 
-        if (drop.type == "eggs" && premiumEggs.includes(drop.key)) {
-          rewardName = content.eggs[drop.key].text + " Egg";
-          rewardType = "egg";
-        } else if (
-          drop.type == "hatchingPotions" &&
-          premiumHatchingPotions.includes(drop.key)
-        ) {
-          rewardType = "hatchingPotion";
-        } else if (
-          drop.type == "hatchingPotions" &&
-          wackyHatchingPotions.includes(drop.key)
-        ) {
-          rewardType = "wackyPotion";
-        } else if (drop.type == "mounts") {
-          rewardType = "mount";
-        } else if (drop.type == "pets") {
-          rewardType = "pet";
-        } else if (drop.type == "gear") {
-          rewardType = "gear";
-        }
+      if (drop.type == "eggs" && premiumEggs.includes(drop.key)) {
+        rewardName = content.eggs[drop.key].text + " Egg";
+        rewardType = "egg";
+      } else if (
+        drop.type == "hatchingPotions" &&
+        premiumHatchingPotions.includes(drop.key)
+      ) {
+        rewardType = "hatchingPotion";
+      } else if (
+        drop.type == "hatchingPotions" &&
+        wackyHatchingPotions.includes(drop.key)
+      ) {
+        rewardType = "wackyPotion";
+      } else if (drop.type == "mounts") {
+        rewardType = "mount";
+      } else if (drop.type == "pets") {
+        rewardType = "pet";
+      } else if (drop.type == "gear") {
+        rewardType = "gear";
+      }
 
-        if (rewardType != "") {
-          let index = rewards.findIndex((reward) => reward.name == rewardName);
-          if (index == -1) {
-            rewards.push({
-              key: drop.key,
-              name: rewardName,
-              type: rewardType,
-              qty: 1,
-            });
-          } else {
-            rewards[index].qty++;
-          }
+      if (rewardType != "") {
+        let index = rewards.findIndex((reward) => reward.name == rewardName);
+        if (index == -1) {
+          rewards.push({
+            key: drop.key,
+            name: rewardName,
+            type: rewardType,
+            qty: 1,
+          });
+        } else {
+          rewards[index].qty++;
         }
       }
     }
@@ -1343,7 +1198,7 @@ function getQuestCompletionData() {
     let totalNeeded = 0;
 
     if (rewards.length > 0 && rewards[0].type == "egg") {
-      neededIndividual = 20 / rewards[0].qty;
+      neededIndividual = EGGS_FOR_COMPLETE_SPECIES / rewards[0].qty;
       for (let member of partyMembers) {
         if (typeof member.numEachEggOwnedUsed[rewards[0].key] === "undefined") {
           member.numEachEggOwnedUsed[rewards[0].key] = 0;
@@ -1363,9 +1218,9 @@ function getQuestCompletionData() {
       (rewards[0].type == "hatchingPotion" || rewards[0].type == "wackyPotion")
     ) {
       if (rewards[0].type == "hatchingPotion") {
-        neededIndividual = 18 / rewards[0].qty;
+        neededIndividual = POTIONS_FOR_COMPLETE_PREMIUM / rewards[0].qty;
       } else {
-        neededIndividual = 9 / rewards[0].qty;
+        neededIndividual = POTIONS_FOR_COMPLETE_WACKY / rewards[0].qty;
       }
       for (let member of partyMembers) {
         if (
@@ -1415,17 +1270,17 @@ function getQuestCompletionData() {
 }
 
 /**
- * reenableWebhooks()
- *
- * Checks the script's webhooks and re-enables any that have
- * been disabled. Temporary, until Google updates Google Apps
- * Script to allow sending API responses manually.
+ * Checks and re-enables any disabled webhooks.
+ * Adds missed webhook tasks to the queue.
+ * Temporary workaround until Google allows manual API responses in GAS.
+ * 
+ * @returns {void}
  */
 let reenabling;
 function reenableWebhooks() {
   // for each Automate Habitica webhook
   for (let webhook of JSON.parse(
-    fetch("https://habitica.com/api/v3/user/webhook", GET_PARAMS)
+    fetch("https://habitica.com/api/v3/user/webhook", GET_PARAMS).getContentText()
   ).data) {
     if (webhook.url === WEB_APP_URL) {
       // if disabled
@@ -1449,7 +1304,7 @@ function reenableWebhooks() {
         // add webhook tasks to the queue
         let enabledTypes = [];
         if (webhook.hasOwnProperty("options")) {
-          for ([option, enabled] of Object.entries(webhook.options)) {
+          for (const [option, enabled] of Object.entries(webhook.options)) {
             if (enabled === true) {
               enabledTypes.push(option);
             }
@@ -1464,7 +1319,7 @@ function reenableWebhooks() {
         ) {
           enabledTypes.push("leveledUp");
         }
-        for (type of enabledTypes) {
+        for (const type of enabledTypes) {
           console.log("Adding " + type + " webhook tasks to the queue...");
 
           processWebhook({ webhookType: type });

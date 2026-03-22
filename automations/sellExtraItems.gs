@@ -1,11 +1,9 @@
 /**
- * sellExtraEggs()
+ * Sells extra eggs, reserving RESERVE_EGGS of each type.
+ * Triggers armoire purchase if AUTO_PURCHASE_ARMOIRES is enabled.
  * 
- * Sells all the player's extra eggs, reserving RESERVE_EGGS
- * of each egg, then purchases enchanted armoires with any 
- * excess gold. Run this function whenever the player might
- * receive eggs: after scoring a task or completing a quest:
- * https://habitica.fandom.com/wiki/Eggs
+ * @see https://habitica.fandom.com/wiki/Eggs
+ * @returns {void}
  */
 function sellExtraEggs() {
 
@@ -39,14 +37,11 @@ function sellExtraEggs() {
 }
 
 /**
- * sellExtraHatchingPotions()
+ * Sells extra hatching potions, reserving RESERVE_HATCHING_POTIONS of each type.
+ * Triggers armoire purchase if AUTO_PURCHASE_ARMOIRES is enabled.
  * 
- * Sells all the player's extra hatching potions, reserving 
- * RESERVE_HATCHING_POTIONS of each hatching potion, then 
- * purchases enchanted armoires with any excess gold. Run this 
- * function whenever the player might receive hatching potions: 
- * after scoring a task or completing a quest:
- * https://habitica.fandom.com/wiki/Hatching_Potions
+ * @see https://habitica.fandom.com/wiki/Hatching_Potions
+ * @returns {void}
  */
 function sellExtraHatchingPotions() {
 
@@ -80,14 +75,11 @@ function sellExtraHatchingPotions() {
 }
 
 /**
- * sellExtraFood()
+ * Sells extra food, reserving RESERVE_FOOD of each type.
+ * Triggers armoire purchase if AUTO_PURCHASE_ARMOIRES is enabled.
  * 
- * Sells all the player's extra food, reserving RESERVE_FOOD
- * of each food, then purchases enchanted armoires with any 
- * excess gold. Run this function whenever the player might
- * receive food: after scoring a task, purchasing armoires,
- * or completing a quest:
- * https://habitica.fandom.com/wiki/Food#How_To_Obtain_A_Food_Item
+ * @see https://habitica.fandom.com/wiki/Food#How_To_Obtain_A_Food_Item
+ * @returns {void}
  */
 function sellExtraFood() {
 

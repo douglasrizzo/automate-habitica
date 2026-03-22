@@ -1,9 +1,8 @@
 /**
- * runCron()
- * 
  * Forces the user to cron if they haven't already cronned today.
+ * Run just after the user's day start time.
  * 
- * Run this function just after the user's day start time.
+ * @returns {void}
  */
 function runCron() {
 

@@ -1,12 +1,9 @@
 /**
- * forceStartQuest()
+ * Forces pending quests to start after FORCE_START_QUESTS_AFTER_HOURS.
+ * Only works if the player ran the quest or is the party leader.
+ * Run on questInvited/questStarted webhooks and every 10 mins.
  * 
- * Forces pending quests to start after FORCE_START_QUESTS_AFTER_HOURS
- * hours, regardless of how many party members have joined. Only works if 
- * the player ran the quest, or the player is the party leader.
- * 
- * Run this function on the questInvited webhook, on the questStarted 
- * webhook, and every 10 mins.
+ * @returns {void}
  */
 function forceStartQuest() {
 
@@ -19,7 +16,7 @@ function forceStartQuest() {
       console.log("Quest \"" + getContent().quests[party.quest.key].text + "\" already discovered " + scriptProperties.getProperty("INVITATION_DISCOVERED"));
 
       // if FORCE_START_QUESTS_AFTER_HOURS hours have passed
-      if ((new Date().getTime() - new Date(scriptProperties.getProperty("INVITATION_DISCOVERED")).getTime()) / 3600000 >= FORCE_START_QUESTS_AFTER_HOURS) {
+      if ((new Date().getTime() - new Date(scriptProperties.getProperty("INVITATION_DISCOVERED")).getTime()) / MS_PER_HOUR >= FORCE_START_QUESTS_AFTER_HOURS) {
 
         console.log(FORCE_START_QUESTS_AFTER_HOURS + " hours have passed, force starting quest");
 
@@ -65,12 +62,12 @@ function forceStartQuest() {
         // delete variables
         scriptProperties.deleteProperty("PENDING_QUEST_KEY");
         scriptProperties.deleteProperty("INVITATION_DISCOVERED");
-      
+
       } else {
         console.log(FORCE_START_QUESTS_AFTER_HOURS + " hours have not passed, waiting");
       }
-    
-    // if new pending quest, set variables
+
+      // if new pending quest, set variables
     } else {
 
       console.log("New quest \"" + getContent().quests[party.quest.key].text + "\", saving quest info");
@@ -79,7 +76,7 @@ function forceStartQuest() {
       scriptProperties.setProperty("INVITATION_DISCOVERED", new Date().toString());
     }
 
-  // if no pending quest, delete variables
+    // if no pending quest, delete variables
   } else {
 
     console.log("No pending quest, deleting quest info");

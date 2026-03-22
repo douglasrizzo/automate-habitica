@@ -1,20 +1,10 @@
 /**
- * pauseResumeDamage()
+ * Calculates pending damage and auto-pauses/resumes damage.
+ * Checks player into inn if damage exceeds MAX_PLAYER_DAMAGE or MAX_PARTY_DAMAGE.
+ * Checks player out of inn when damage is safe.
  * 
- * Calculates pending damage to player & party based on player's
- * incomplete dailies, stats, & the current quest. Checks player 
- * into the inn if pending damage to player or party exceed 
- * MAX_PLAYER_DAMAGE or MAX_PARTY_DAMAGE or player's hp or party 
- * members' hp, checks player out of inn otherwise.
- * 
- * Run this function whenever the player is invited to a quest, 
- * when the player crons, and periodically throughout the day.
- * 
- * If the player is sleeping, run this function whenever they cast 
- * stealth, whenever a due daily is scored, whenever they level up 
- * to an even number level <= 100, whenever stat points are 
- * allocated to CON, whenever CON is buffed, whenever the player's 
- * party finishes a quest, and whenever the player/party is healed.
+ * @param {string} [questKey] - Quest key to use for damage calculation (defaults to current quest)
+ * @returns {void}
  */
 function pauseResumeDamage(questKey) {
 
@@ -26,7 +16,7 @@ function pauseResumeDamage(questKey) {
   if (quest) {
     boss = getContent().quests[quest].boss;
   }
-  let bossStr = 4;
+  let bossStr = DEFAULT_BOSS_STR;
   if (typeof boss !== "undefined") {
     bossStr = boss.str;
   }
@@ -45,10 +35,10 @@ function pauseResumeDamage(questKey) {
       }
 
       // calculate value
-      let taskValue = Math.min(Math.max(daily.value, -47.27), 21.27);
+      let taskValue = Math.min(Math.max(daily.value, TASK_VALUE_MIN), TASK_VALUE_MAX);
 
       // calculate damage value
-      let delta = Math.abs(Math.pow(0.9747, taskValue));
+      let delta = Math.abs(Math.pow(DAMAGE_CALC_EXPONENT, taskValue));
       if (daily.checklist.length > 0) {
         let subtasksDone = 0;
         for (let subtask of daily.checklist) {
@@ -65,21 +55,21 @@ function pauseResumeDamage(questKey) {
         // calculate damage to party
         let bossDelta = delta;
         if (daily.priority < 1) {
-            bossDelta *= daily.priority;
+          bossDelta *= daily.priority;
         }
         damageToParty += bossDelta * bossStr;
       }
 
       // calculate damage to player
-      damageToPlayer += Math.round(delta * daily.priority * 2 * Math.max(0.1, 1 - (con / 250)) * 10) / 10;
+      damageToPlayer += Math.round(delta * daily.priority * PLAYER_DAMAGE_MULTIPLIER * Math.max(MIN_CON_REDUCTION, 1 - (con / CON_DAMAGE_DIVISOR)) * DAMAGE_ROUNDING_PRECISION) / DAMAGE_ROUNDING_PRECISION;
     }
   }
 
   // add up & round damage values
-  let damageTotal = Math.ceil((damageToPlayer + damageToParty) * 10) / 10;
-  damageToPlayer = Math.ceil(damageToPlayer  * 10) / 10;
+  let damageTotal = Math.ceil((damageToPlayer + damageToParty) * DAMAGE_ROUNDING_PRECISION) / DAMAGE_ROUNDING_PRECISION;
+  damageToPlayer = Math.ceil(damageToPlayer * DAMAGE_ROUNDING_PRECISION) / DAMAGE_ROUNDING_PRECISION;
   if (typeof getMembers(true) !== "undefined" && members.length > 1) {
-    damageToParty = Math.ceil(damageToParty * 10) / 10;
+    damageToParty = Math.ceil(damageToParty * DAMAGE_ROUNDING_PRECISION) / DAMAGE_ROUNDING_PRECISION;
   } else {
     damageToParty = 0;
   }
@@ -92,7 +82,7 @@ function pauseResumeDamage(questKey) {
   if (typeof boss !== "undefined") {
 
     // get lowest party member health
-    let lowestHealth = 50;
+    let lowestHealth = MAX_HP;
     for (let member of members || []) {
       if (member.stats.hp < lowestHealth) {
         lowestHealth = member.stats.hp;
@@ -106,7 +96,7 @@ function pauseResumeDamage(questKey) {
       wakeUp();
     }
 
-  // if on a collection quest or not on a quest
+    // if on a collection quest or not on a quest
   } else {
 
     // if damage to player greater than threshold or hp, sleep, otherwise wake up
@@ -117,6 +107,10 @@ function pauseResumeDamage(questKey) {
     }
   }
 
+  /**
+   * Checks player into the inn (pauses damage).
+   * @returns {void}
+   */
   function sleep() {
     if (!user.preferences.sleep) {
 
@@ -125,7 +119,7 @@ function pauseResumeDamage(questKey) {
       fetch("https://habitica.com/api/v3/user/sleep", POST_PARAMS);
 
       // update user data
-      user.preferences.sleep = false;
+      user.preferences.sleep = true;
 
     } else {
 
@@ -134,6 +128,10 @@ function pauseResumeDamage(questKey) {
     }
   }
 
+  /**
+   * Checks player out of the inn (resumes damage).
+   * @returns {void}
+   */
   function wakeUp() {
     if (user.preferences.sleep) {
 
@@ -142,7 +140,7 @@ function pauseResumeDamage(questKey) {
       fetch("https://habitica.com/api/v3/user/sleep", POST_PARAMS);
 
       // update user data
-      user.preferences.sleep = true;
+      user.preferences.sleep = false;
 
     } else {
 

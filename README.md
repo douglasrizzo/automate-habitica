@@ -18,7 +18,10 @@ Automatically and immediately accepts [quest](https://habitica.fandom.com/wiki/Q
 
 ### Force Start Quests
 
-Forces pending [quests](https://habitica.fandom.com/wiki/Quests) to start after `FORCE_START_QUESTS_AFTER_HOURS` hours, regardless of how many [party](https://habitica.fandom.com/wiki/Party) members have joined. If the script force starts the quest, and if `NOTIFY_MEMBERS_EXCLUDED_FROM_QUEST` is set to `true`, it sends a [private message](https://habitica.fandom.com/wiki/Private_Messaging) to the player with a list of party members who failed to join. Only party leaders can run this automation.
+Forces pending [quests](https://habitica.fandom.com/wiki/Quests) to start after `FORCE_START_QUESTS_AFTER_HOURS` hours, regardless of how many [party](https://habitica.fandom.com/wiki/Party) members have joined. If the script force starts the quest, and if `NOTIFY_MEMBERS_EXCLUDED_FROM_QUEST` is set to `true`, it sends a [private message](https://habitica.fandom.com/wiki/Private_Messaging) to the player with a list of party members who failed to join.
+
+> [!NOTE]
+> Only party leaders can run this automation.
 
 ### Auto Invite Quests
 
@@ -47,16 +50,38 @@ BANNED_SCROLLS = [
 
 #### Quest Selection Mode (`QUEST_INVITE_MODE`)
 
+When a quest ends, the script waits **5-15 minutes** before sending the next quest invite. The initial 5-minute delay gives all party members the same time to manually send invitations to their favorite quests, while the variable 10-minute wait period prevents multiple party members from sending simultaneous quest invitations.
+
 The `QUEST_INVITE_MODE` setting controls how the script chooses which quest to invite:
 
-| Mode         | Description                                                                                                                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `"random"`   | Selects a random quest scroll from your eligible quests. This is the classic behavior.                                                                                                            |
-| `"priority"` | Selects the quest with the **lowest party completion percentage**. This helps your party work towards completing all quests together, prioritizing quests that fewer party members have finished. |
+- `"random"` mode
+  - Selects a random quest scroll from your eligible quests.
+  - Sends the invite after a random delay between 5-15 minutes.
+- `"priority"` mode
+  - Selects the quest with the **lowest [quest completion percentage](#quest-completion-percentage)**. This helps your party work towards completing all quests together, prioritizing quests that fewer party members have finished.
+  - If `PRIORITY_DELAY_MODE = true`:
+    - Send the invite a after a delay which is linearly proportional to [quest completion percentage](#quest-completion-percentage):
+      - 0% completion -> 5 minutes
+      - 100% completion -> 15 minutes
+  - Else, the behavior is the same as in `"random"` mode.
 
-**How Priority Mode Works:**
+<details>
+<summary>A note on fairness</summary>
 
-The priority mode uses the [Quest Completion Percentage](#quest-completion-percentage) calculation to determine which quest to invite. The quest with the lowest overall party completion percentage is selected first, ensuring your party focuses on quests where progress is most needed.
+---
+
+If you are worried about fairness in the quest invite process, consider that, while random mode gives all players an equal chance of inviting the party to a quest:
+
+1. It does not allow party members to select which invitation they will send. This is what the initial delay is for.
+1. Habitica offers no achievements or benefits for being the party member who starts a quest. The person who sends the invite gains nothing over those who simply accept it.
+1. The only apparent benefit of random mode is that it makes party members spend their quest scrolls equally. However, this argument doesn't hold up: players who spend more scrolls still receive the full individual rewards from those quests.
+   Scrolls are simply traded for rewards, there is no benefit to hoarding them. In fact, priority mode allows players with lots of rare scrolls to use the party's help to convert them into rewards while sharing those rewards with the party.
+
+This makes priority mode objectively better: it systematically completes quests that fewer members have finished, maximizes reward distribution across the party, and ensures no scroll sits unused in anyone's inventory.
+
+---
+
+</details>
 
 ### Party Report
 
@@ -98,7 +123,10 @@ Stat points are automatically allocated to your chosen [stat](https://habitica.f
 
 ### Auto Purchase Gems
 
-Automatically purchases [gems](https://habitica.fandom.com/wiki/Gems) with [gold](https://habitica.fandom.com/wiki/Gold_Points) each month. Note that you must [cron](https://habitica.fandom.com/wiki/Cron) at least once during a month in order to buy gems for that month. Only [subscribers](https://habitica.fandom.com/wiki/Subscription) can run this automation.
+Automatically purchases [gems](https://habitica.fandom.com/wiki/Gems) with [gold](https://habitica.fandom.com/wiki/Gold_Points) each month. You must [cron](https://habitica.fandom.com/wiki/Cron) at least once during a month in order to buy gems for that month.
+
+> [!IMPORTANT]
+> Only [subscribers](https://habitica.fandom.com/wiki/Subscription) can run this automation.
 
 ### Auto Purchase Armoires
 
@@ -140,25 +168,28 @@ In other words, the script will not choose which pets to hatch/feed for you; it 
 
 #### Priority Mode
 
-Hatches and feeds pets immediately using available resources, following a defined priority order.
+Hatches and feeds pets immediately using available resources, following a defined priority order. The priorities are designed to help players complete their collection of pets and mounts in a predictable way and also earn [pet and mount achievements](https://habitica.fandom.com/wiki/Achievements) as efficiently as possible.
 
 **Hatching Priority (in order):**
 
-1. **Standard pets (basic colors)** - e.g., Base Wolf, Red Fox
-2. **Standard pets (magic potion colors)** - e.g., Royal Purple Wolf, Shimmer Fox
-3. **Quest pets** - Pets from quest rewards (always basic colors)
-4. **Wacky pets** - Pets hatched with wacky potions
+1. **Standard pets (basic colors)**, also known as [generation 1 pets](https://habitica.fandom.com/wiki/Pets#Generation_1_Pets)
+2. **[Magic potion pets](https://habitica.fandom.com/wiki/Pets#Magic_Potion_Pets) and [Quest pets](https://habitica.fandom.com/wiki/Pets#Quest_Pets)**
+3. **[Wacky potion pets](https://habitica.fandom.com/wiki/Pets#Wacky_Potion_Pets)**
 
 Within each group, pets are hatched alphabetically by species name.
 
+> [!TIP] > **Why this order?** Standard pets of basic colors are prioritized because Habitica has achievements for collecting all standard pets and mounts of basic colors. Magic potion pets and quest pets share the same priority because they use different resources (eggs and potions), so they don't compete with each other for hatching.
+
 **Feeding Priority (in order):**
 
-1. **Standard pets (basic colors)** - Fed with favorite foods only (+5 per feeding)
-2. **Quest pets** - Fed with favorite foods only (+5 per feeding)
-3. **Magic potion pets** - Fed with leftover food (+2 per feeding)
-4. **Wacky pets** - Skipped (cannot become mounts)
+1. **Standard pets (basic colors)**, also known as [generation 1 pets](https://habitica.fandom.com/wiki/Pets#Generation_1_Pets) - Fed with favorite foods only (+5 per feeding)
+2. **[Quest pets](https://habitica.fandom.com/wiki/Pets#Quest_Pets)** - Fed with favorite foods only (+5 per feeding)
+3. **[Magic potion pets](https://habitica.fandom.com/wiki/Pets#Magic_Potion_Pets)** - Fed with leftover food (+5 per feeding)
+4. **[Wacky potion pets](https://habitica.fandom.com/wiki/Pets#Wacky_Potion_Pets)** - Skipped (cannot become mounts)
 
 Within each group, pets closest to becoming mounts are fed first.
+
+> [!TIP] > **Why this order?** Basic color pets (standard and quest) have [favorite foods](https://habitica.fandom.com/wiki/Food_Preferences) that give +5 points per feeding, while magic potion pets get +5 points for any food item. By feeding basic color pets first, we ensure their specific food requirements are met before giving leftover food to magic potion pets, which can eat anything.
 
 **Feeding Efficiency:**
 
@@ -179,9 +210,11 @@ Within each group, pets closest to becoming mounts are fed first.
 
 Hides [notifications](https://habitica.fandom.com/wiki/Notifications?so=search#Parties_and_Guilds) from groups ([party](https://habitica.fandom.com/wiki/Party) & [guilds](https://habitica.fandom.com/wiki/Guilds)) in the Habitica UI. The player can configure which groups they'd like to hide notifications from. To get the ID of a guild, visit the guild in a web browser and copy the end of the URL in your address bar (everything after the last `/`). Note that if you set `HIDE_PARTY_NOTIFICATIONS` or `HIDE_ALL_GUILD_NOTIFICATIONS` to `true`, it may take up to 10 mins for Automate Habitica to start hiding notifications from any new party/guilds you join.
 
-If you are in a party that buffs a lot, it is recommended that you turn `HIDE_PARTY_NOTIFICATIONS` off, because the script needs to make 2 API calls to hide each party notification. API calls take time, so if your party is buffing continuously, you may see party notifications appear & disappear rapidly. Also, the Habitica API only allows a certain number of API calls per minute (better to use those API calls for buffs if you have lots of mana!)
+> [!TIP]
+> If you are in a party that buffs a lot, it is recommended that you turn `HIDE_PARTY_NOTIFICATIONS` off, because the script needs to make 2 API calls to hide each party notification. API calls take time, so if your party is buffing continuously, you may see party notifications appear & disappear rapidly. Also, the Habitica API only allows a certain number of API calls per minute (better to use those API calls for buffs if you have lots of mana!)
 
-**_Note that due to [limitations with Google Apps Script](https://issuetracker.google.com/issues/231411987), Automate Habitica+ may take up to 2 mins to hide party notifications if `HIDE_PARTY_NOTIFICATIONS` is set to `true`._**
+> [!NOTE]
+> Due to [limitations with Google Apps Script](https://issuetracker.google.com/issues/231411987), Automate Habitica+ may take up to 2 mins to hide party notifications if `HIDE_PARTY_NOTIFICATIONS` is set to `true`.
 
 ---
 
@@ -215,7 +248,12 @@ Quests with lower completion percentages are prioritized, helping your party wor
 
 ## Before Installing
 
-It is highly recommended that you use a desktop computer for this, as some of the steps don't work well on mobile. First you must uninstall any scripts that do the same thing(s) as Automate Habitica. For example, if you are running the [Auto Accept Quests](https://habitica.fandom.com/wiki/Google_Apps_Script#Auto_Accept_Quests) script, you need to uninstall it, because Automate Habitica also auto accepts quest invites, and these two scripts will conflict with each other. To uninstall a script:
+It is highly recommended that you use a desktop computer for this, as some of the steps don't work well on mobile.
+
+> [!WARNING]
+> You must uninstall any scripts that do the same thing(s) as Automate Habitica. For example, if you are running the [Auto Accept Quests](https://habitica.fandom.com/wiki/Google_Apps_Script#Auto_Accept_Quests) script, you need to uninstall it, because Automate Habitica also auto accepts quest invites, and these two scripts will conflict with each other.
+
+To uninstall a script:
 
 1. Click [here](https://script.google.com/home) to see a list of your scripts. If you're not already signed into your Google account, click the "Start Scripting" button and sign in. Then click on "My Projects" in the main menu on the left.
 2. Click on the script you want to uninstall.
@@ -233,7 +271,10 @@ It is highly recommended that you use a desktop computer for this, as some of th
 
 ## Setup Instructions
 
-It is highly recommended that you use a desktop computer for this, as some of the steps don't work well on mobile. Make sure you read the [Before Installing](#before-installing) section above, and follow the instructions there if applicable! Make sure you only install one copy of Automate Habitica per Google account, otherwise you will exceed the [limit for URL Fetch calls](https://developers.google.com/apps-script/guides/services/quotas) and the script will not work.
+It is highly recommended that you use a desktop computer for this, as some of the steps don't work well on mobile. Make sure you read the [Before Installing](#before-installing) section above, and follow the instructions there if applicable!
+
+> [!CAUTION]
+> Only install one copy of Automate Habitica per Google account, otherwise you will exceed the [limit for URL Fetch calls](https://developers.google.com/apps-script/guides/services/quotas) and the script will not work.
 
 1. Click [here](https://script.google.com/home/projects/14GDS_AQCgXyNK0-VEJlfhvIMI-h4GpnDnYm_3GNUxzOb-LG63NhhWtHi/) to go to the Automate Habitica script. If you're not signed into your Google account, click on "Start Scripting", then sign in, then click on the script link again.
 2. Click the "Make a copy" button (looks like two pages of paper).
@@ -243,7 +284,11 @@ It is highly recommended that you use a desktop computer for this, as some of th
 6. Skip the line that says `const WEB_APP_URL = "";`. We will come back to that later. Edit all the other settings (`const`s) in the script to your liking. Only edit in between the `=` and the `;`. If there are quotations `""` in between the `=` and the `;`, just type in between the quotations.
 7. Click the "Save project" button near the top of the page (looks like a floppy disk).
 8. Click the blue "Deploy" button near the top of the page, then click "New deployment", then click the "Deploy" button.
-9. (If this is your first time deploying) Click the "Review permissions" button and select your Google account. Click on "Advanced", then "Go to Automate Habitica+ (unsafe)". (Don't worry, it is safe!) Then click "Continue", then "Allow".
+9. (If this is your first time deploying) Click the "Review permissions" button and select your Google account. Click on "Advanced", then "Go to Automate Habitica+ (unsafe)", then click "Continue", then "Allow".
+
+> [!TIP]
+> The "(unsafe)" warning appears because Google hasn't verified this script. It's safe to proceed—the script only communicates with Habitica's API.
+
 10. Under "Web app", click the "Copy" button to copy the Web App URL. Then click the "Done" button.
 11. Paste your Web App URL inside the quotations where it says `const WEB_APP_URL = "";`.
 12. Click the drop-down menu to the right of the "Debug" button, near the top of the page. Select "install" from the drop-down.

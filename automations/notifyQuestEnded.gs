@@ -1,10 +1,9 @@
 /**
- * notifyQuestEnded()
+ * Sends a private message to the player notifying them that the quest has ended.
+ * Run on the questFinished webhook.
  * 
- * Sends a private message to the player notifying them that
- * the quest has ended.
- * 
- * Run this function on the questFinished webhook.
+ * @param {string} questKey - Key of the completed quest
+ * @returns {void}
  */
 function notifyQuestEnded(questKey) {
 

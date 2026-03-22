@@ -1,11 +1,11 @@
 /**
- * allocateStatPoints()
- * 
  * Allocates all unallocated stat points to STAT_TO_ALLOCATE.
+ * Run on leveledUp webhook and when player's class changes.
  * 
- * Run this function whenever the player gains stat points: on 
- * the leveledUp webhook, and whenever the player's class changes:
- * https://habitica.fandom.com/wiki/Character_Stats
+ * @see https://habitica.fandom.com/wiki/Character_Stats
+ * @param {number} [unusedStatPoints] - Number of points to allocate (fetched from API if not provided)
+ * @param {number} [lvl] - Player level (fetched from API if not provided)
+ * @returns {void}
  */
 function allocateStatPoints(unusedStatPoints, lvl) {
 

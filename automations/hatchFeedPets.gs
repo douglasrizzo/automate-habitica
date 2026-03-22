@@ -1,17 +1,37 @@
 /**
- * hatchFeedPets()
- *
- * Automatically hatches pets, but only if the player has enough
- * eggs for all pets/mounts of that species, and enough hatching
- * potions for all pets/mounts of that color.
- *
- * Automatically feeds pets, but only if the player has enough
- * of the pet's favorite food(s) to feed all pets with the same
- * favorite food(s).
- *
- * Run this function whenever the player gets eggs, hatching
- * potions, or food: whenever a task is scored, and whenever a
- * quest is completed.
+ * Hatching priority groups for priority strategy (lower = higher priority):
+ * Used to determine which pets to hatch first when resources are limited.
+ */
+const HATCH_PRIORITY = {
+  STANDARD_BASIC: 1,    // Standard pets, basic colors (Base, Red, etc.)
+  PREMIUM: 2,           // Standard pets, magic potions (Royal Purple, etc.)
+  QUEST: 2,             // Quest pets, only come in basic colors
+  WACKY: 3,             // Wacky potion pets
+};
+
+/**
+ * Feeding priority groups for priority strategy (lower = higher priority):
+ * Used to determine which pets to feed first.
+ */
+const FEED_PRIORITY = {
+  STANDARD: 1,          // Standard pets, basic colors
+  QUEST: 2,             // Quest pets, only come in basic colors
+  PREMIUM: 3,           // Standard pets, magic potions
+};
+
+/**
+ * Conservative strategy for hatching and feeding pets.
+ * 
+ * Only hatches pets when the player has enough eggs for ALL pets/mounts of that
+ * species, and enough hatching potions for ALL pets/mounts of that color.
+ * 
+ * Only feeds pets when the player has enough of the pet's favorite food(s) to
+ * feed ALL pets with the same favorite food(s).
+ * 
+ * Run this function whenever the player gets eggs, hatching potions, or food:
+ * whenever a task is scored, and whenever a quest is completed.
+ * 
+ * @returns {void}
  */
 function hatchFeedPets() {
   // if time limit, return
@@ -29,142 +49,89 @@ function hatchFeedPets() {
   let numEachPotionNeededTotal = {};
   for (let pet of petLists.nonWackyNonSpecialPets) {
     let [species, color] = pet.split("-");
-    if (numEachEggNeededTotal.hasOwnProperty(species)) {
-      numEachEggNeededTotal[species] = numEachEggNeededTotal[species] + 2;
-    } else {
-      numEachEggNeededTotal[species] = 2;
-    }
-    if (numEachPotionNeededTotal.hasOwnProperty(color)) {
-      numEachPotionNeededTotal[color] = numEachPotionNeededTotal[color] + 2;
-    } else {
-      numEachPotionNeededTotal[color] = 2;
-    }
+    numEachEggNeededTotal[species] = (numEachEggNeededTotal[species] || 0) + RESOURCES_PER_NON_WACKY;
+    numEachPotionNeededTotal[color] = (numEachPotionNeededTotal[color] || 0) + RESOURCES_PER_NON_WACKY;
   }
   for (let pet of petLists.wackyPets) {
     let [species, color] = pet.split("-");
-    if (numEachEggNeededTotal.hasOwnProperty(species)) {
-      numEachEggNeededTotal[species] = numEachEggNeededTotal[species] + 1;
-    } else {
-      numEachEggNeededTotal[species] = 1;
-    }
-    if (numEachPotionNeededTotal.hasOwnProperty(color)) {
-      numEachPotionNeededTotal[color] = numEachPotionNeededTotal[color] + 1;
-    } else {
-      numEachPotionNeededTotal[color] = 1;
-    }
+    numEachEggNeededTotal[species] = (numEachEggNeededTotal[species] || 0) + RESOURCES_PER_WACKY;
+    numEachPotionNeededTotal[color] = (numEachPotionNeededTotal[color] || 0) + RESOURCES_PER_WACKY;
   }
 
   // get # each egg & hatching potion owned/used, pets & mounts owned, # each food type needed, # extra food needed
   let numEachEggOwnedUsed = JSON.parse(JSON.stringify(contentData.eggs));
-  let eggsOwned = getUser(true).items.eggs;
+  let numEachPotionOwnedUsed = JSON.parse(JSON.stringify(contentData.hatchingPotions));
+
+  // add owned eggs and potions to counts
+  let userData = getUser(true);
   for (let egg of Object.keys(numEachEggOwnedUsed)) {
-    numEachEggOwnedUsed[egg] = eggsOwned[egg] ? eggsOwned[egg] : 0;
+    numEachEggOwnedUsed[egg] = userData.items.eggs[egg] || 0;
   }
-  let numEachPotionOwnedUsed = JSON.parse(
-    JSON.stringify(contentData.hatchingPotions)
-  );
-  let potionsOwned = user.items.hatchingPotions;
   for (let potion of Object.keys(numEachPotionOwnedUsed)) {
-    numEachPotionOwnedUsed[potion] = potionsOwned[potion]
-      ? potionsOwned[potion]
-      : 0;
+    numEachPotionOwnedUsed[potion] = userData.items.hatchingPotions[potion] || 0;
   }
-  let nonSpecialPetsOwned = [];
-  for (let [pet, amount] of Object.entries(user.items.pets)) {
-    if (amount > 0 && petLists.allNonSpecialPets.includes(pet)) {
-      // 0 = released pet, 5 = newly hatched pet, >5 = fed pet, -1 = mount but no pet
-      nonSpecialPetsOwned.push(pet);
-      let [species, color] = pet.split("-");
-      if (numEachEggOwnedUsed.hasOwnProperty(species)) {
-        numEachEggOwnedUsed[species] = numEachEggOwnedUsed[species] + 1;
-      } else {
-        numEachEggOwnedUsed[species] = 1;
-      }
-      if (numEachPotionOwnedUsed.hasOwnProperty(color)) {
-        numEachPotionOwnedUsed[color] = numEachPotionOwnedUsed[color] + 1;
-      } else {
-        numEachPotionOwnedUsed[color] = 1;
-      }
-    }
+
+  // get owned pets and add to egg/potion "used" counts
+  let petsOwned = getOwnedPets(petLists.allNonSpecialPets);
+  for (let pet of Object.keys(petsOwned)) {
+    let [species, color] = pet.split("-");
+    numEachEggOwnedUsed[species] = (numEachEggOwnedUsed[species] || 0) + 1;
+    numEachPotionOwnedUsed[color] = (numEachPotionOwnedUsed[color] || 0) + 1;
   }
-  let nonSpecialMountsOwned = [];
-  for (let [mount, owned] of Object.entries(user.items.mounts)) {
-    if (owned && petLists.allNonSpecialPets.includes(mount)) {
-      nonSpecialMountsOwned.push(mount);
-    }
-  }
-  let numEachFoodTypeNeededTotal =
-    Object.keys(numEachEggNeededTotal).length * 9;
+
+  // get owned mounts and add to egg/potion "used" counts
+  let mountsOwned = getOwnedMounts(petLists.allNonSpecialPets);
+
+  // calculate food needs per color type
+  let numEachFoodTypeNeededTotal = Object.keys(numEachEggNeededTotal).length * FEEDINGS_TO_MOUNT_FAVORITE;
   let numEachFoodTypeNeeded = {};
   for (let color of basicColors) {
     numEachFoodTypeNeeded[color] = numEachFoodTypeNeededTotal;
   }
-  let numExtraFoodNeeded =
+  // Food needed for magic potion pets (they eat any food, so use "surplus" after basic pets get favorites)
+  let foodNeededForMagicPets =
     Object.keys(contentData.premiumHatchingPotions).length *
     Object.keys(contentData.dropEggs).length *
-    9;
-  for (let mount of nonSpecialMountsOwned) {
+    FEEDINGS_TO_MOUNT_FAVORITE;
+
+  // process owned mounts: add to counts and reduce food needs
+  for (let mount of Object.keys(mountsOwned)) {
     let [species, color] = mount.split("-");
-    if (numEachEggOwnedUsed.hasOwnProperty(species)) {
-      numEachEggOwnedUsed[species] = numEachEggOwnedUsed[species] + 1;
-    } else {
-      numEachEggOwnedUsed[species] = 1;
-    }
-    if (numEachPotionOwnedUsed.hasOwnProperty(color)) {
-      numEachPotionOwnedUsed[color] = numEachPotionOwnedUsed[color] + 1;
-    } else {
-      numEachPotionOwnedUsed[color] = 1;
-    }
+    numEachEggOwnedUsed[species] = (numEachEggOwnedUsed[species] || 0) + 1;
+    numEachPotionOwnedUsed[color] = (numEachPotionOwnedUsed[color] || 0) + 1;
     if (basicColors.includes(color)) {
-      numEachFoodTypeNeeded[color] = numEachFoodTypeNeeded[color] - 9;
+      numEachFoodTypeNeeded[color] -= FEEDINGS_TO_MOUNT_FAVORITE;
     } else {
-      numExtraFoodNeeded -= 9;
+      foodNeededForMagicPets -= FEEDINGS_TO_MOUNT_FAVORITE;
     }
   }
 
-  // get # each usable food owned & # each usable food type owned
-  let numEachUsableFoodOwned = {};
-  let numEachFoodTypeOwned = {};
-  for (let [food, amount] of Object.entries(user.items.food)) {
-    if (
-      food != "Saddle" &&
-      (ONLY_USE_DROP_FOOD !== true || contentData.food[food].canDrop)
-    ) {
-      if (amount > 0) {
-        numEachUsableFoodOwned[food] = amount;
-      }
-      let target = contentData.food[food].target;
-      if (numEachFoodTypeOwned.hasOwnProperty(target)) {
-        numEachFoodTypeOwned[target] = numEachFoodTypeOwned[target] + amount;
-      } else {
-        numEachFoodTypeOwned[target] = amount;
-      }
-    }
-  }
+  // get usable food and group by target color
+  let { foodOwned, foodByType } = getUsableFoodWithTypes();
 
-  // get # extra food owned, # extra extra food needed/owned
-  let numExtraFoodOwned = 0;
-  let numExtraExtraFoodNeeded = 0;
-  for (let [food, amount] of Object.entries(numEachFoodTypeOwned)) {
-    let extra = amount - numEachFoodTypeNeeded[food];
-    if (extra > 0) {
-      numExtraFoodOwned += extra;
-    } else if (extra < 0) {
-      numExtraExtraFoodNeeded += Math.abs(extra);
+  // Calculate surplus food (food beyond what basic pets need for their favorites)
+  // This surplus can be used for: 1) magic potion pets, 2) fallback for basic pets with non-favorite food
+  let surplusFoodAvailable = 0;
+  let favoriteFoodDeficit = 0; // how much favorite food we're short for basic pets
+  for (let [color, amount] of Object.entries(foodByType)) {
+    let surplus = amount - numEachFoodTypeNeeded[color];
+    if (surplus > 0) {
+      surplusFoodAvailable += surplus;
+    } else if (surplus < 0) {
+      favoriteFoodDeficit += Math.abs(surplus);
     }
   }
-  numExtraExtraFoodNeeded *= 23 / 9;
-  let numExtraExtraFoodOwned = Math.max(
-    0,
-    numExtraFoodOwned - numExtraFoodNeeded
-  );
+  // Convert deficit to non-favorite feedings (takes more food since +2 instead of +5)
+  let fallbackFoodNeeded = favoriteFoodDeficit * NON_FAVORITE_TO_FAVORITE_RATIO;
+  // Food available after reserving for magic potion pets
+  let fallbackFoodAvailable = Math.max(0, surplusFoodAvailable - foodNeededForMagicPets);
 
   // for each non-special pet in content
   for (let pet of petLists.allNonSpecialPets) {
     let [species, color] = pet.split("-");
     let speciesReadable = makeReadable(species);
     let colorReadable = makeReadable(color);
-    let hunger = 50;
+    let hunger = MOUNT_THRESHOLD;
 
     // if player has all needed eggs & potions for that species & color
     if (
@@ -172,20 +139,17 @@ function hatchFeedPets() {
       numEachPotionOwnedUsed[color] - numEachPotionNeededTotal[color] >= 0
     ) {
       // if player doesn't have pet
-      if (!nonSpecialPetsOwned.includes(pet)) {
+      if (!petsOwned.hasOwnProperty(pet)) {
         // hatch pet
         hatchPet(species, color);
-        hunger = 45;
+        hunger = HUNGER_AFTER_HATCH;
       }
 
       // if non-wacky & player doesn't have mount
-      if (
-        !petLists.wackyPets.includes(pet) &&
-        !nonSpecialMountsOwned.includes(pet)
-      ) {
+      if (!petLists.wackyPets.includes(pet) && !mountsOwned.hasOwnProperty(pet)) {
         // get pet hunger
-        if (hunger == 50) {
-          let fed = user.items.pets[pet];
+        if (hunger == MOUNT_THRESHOLD) {
+          let fed = petsOwned[pet];
           if (typeof fed !== "undefined" && fed > 0) {
             hunger -= fed;
           }
@@ -195,40 +159,40 @@ function hatchFeedPets() {
         let grewToMount = false;
         if (basicColors.includes(color)) {
           // if player has enough preferred food for all basic pets of this color
-          if (numEachFoodTypeOwned[color] >= numEachFoodTypeNeeded[color]) {
+          if (foodByType[color] >= numEachFoodTypeNeeded[color]) {
             // calculate feedings needed
             let feedingsNeeded = Math.ceil(hunger / FOOD_POINTS_FAVORITE);
 
-            // for each usable food owned
-            for (let [food, amount] of Object.entries(numEachUsableFoodOwned)) {
-              // if correct food type
-              if (contentData.food[food].target == color) {
-                // calculate feedings
-                let feedings = Math.min(feedingsNeeded, amount);
+            // feed with favorite foods
+            let favoriteFoods = getFavoriteFoods(color);
+            for (let food of favoriteFoods) {
+              let amount = foodOwned[food] || 0;
+              if (amount <= 0) continue;
 
-                // feed this food
-                feedPet(pet, food, feedings, speciesReadable, colorReadable);
+              // calculate feedings
+              let feedings = Math.min(feedingsNeeded, amount);
 
-                // update data
-                feedingsNeeded -= feedings;
-                numEachUsableFoodOwned[food] -= feedings;
-                if (numEachUsableFoodOwned[food] <= 0) {
-                  delete numEachUsableFoodOwned[food];
-                }
-                let target = contentData.food[food].target;
-                numEachFoodTypeOwned[target] -= feedings;
-                numEachFoodTypeNeeded[target] -= feedings;
+              // feed this food
+              feedPet(pet, food, feedings, speciesReadable, colorReadable);
 
-                // stop feeding if full
-                if (feedingsNeeded <= 0) {
-                  grewToMount = true;
-                  break;
-                }
+              // update data
+              feedingsNeeded -= feedings;
+              foodOwned[food] -= feedings;
+              if (foodOwned[food] <= 0) {
+                delete foodOwned[food];
+              }
+              foodByType[color] -= feedings;
+              numEachFoodTypeNeeded[color] -= feedings;
+
+              // stop feeding if full
+              if (feedingsNeeded <= 0) {
+                grewToMount = true;
+                break;
               }
             }
 
-            // if player has enough extra extra food
-          } else if (numExtraExtraFoodOwned >= numExtraExtraFoodNeeded) {
+            // fallback: use non-favorite food if enough surplus available
+          } else if (fallbackFoodAvailable >= fallbackFoodNeeded) {
             // calculate feedings needed
             let feedingsNeeded = Math.ceil(hunger / FOOD_POINTS_NON_FAVORITE);
 
@@ -238,8 +202,8 @@ function hatchFeedPets() {
               feedingsNeeded,
               speciesReadable,
               colorReadable,
-              numEachUsableFoodOwned,
-              numEachFoodTypeOwned,
+              foodOwned,
+              foodByType,
               numEachFoodTypeNeeded,
               contentData
             );
@@ -254,15 +218,15 @@ function hatchFeedPets() {
               ": not enough preferred food (need " +
               numEachFoodTypeNeeded[color] +
               ", have " +
-              numEachFoodTypeOwned[color] +
+              foodByType[color] +
               ")"
             );
           }
 
-          // if premium color mount
+          // if magic potion color pet (premium colors)
         } else {
-          // if player has enough extra food
-          if (numExtraFoodOwned >= numExtraFoodNeeded) {
+          // if player has enough surplus food for magic potion pets
+          if (surplusFoodAvailable >= foodNeededForMagicPets) {
             // calculate feedings needed
             let feedingsNeeded = Math.ceil(hunger / FOOD_POINTS_MAGIC_POTION_PET);
 
@@ -272,23 +236,23 @@ function hatchFeedPets() {
               feedingsNeeded,
               speciesReadable,
               colorReadable,
-              numEachUsableFoodOwned,
-              numEachFoodTypeOwned,
+              foodOwned,
+              foodByType,
               numEachFoodTypeNeeded,
               contentData
             );
 
-            // not enough food to feed premium color mount
+            // not enough surplus food for magic potion pet
           } else {
             console.log(
               "Cannot feed " +
               colorReadable +
               " " +
               speciesReadable +
-              ": not enough extra food (need " +
-              numExtraFoodNeeded +
-              " extra food, ie. food that would be left over when all unowned basic color mounts are fed their favorite foods; have " +
-              numExtraFoodOwned +
+              ": not enough surplus food (need " +
+              foodNeededForMagicPets +
+              " surplus food after basic pets get favorites; have " +
+              surplusFoodAvailable +
               ")"
             );
           }
@@ -302,9 +266,8 @@ function hatchFeedPets() {
 
       // if not enough eggs and/or not enough hatching potions
     } else if (
-      !nonSpecialPetsOwned.includes(pet) ||
-      (!petLists.wackyPets.includes(pet) &&
-        !nonSpecialMountsOwned.includes(pet))
+      !petsOwned.hasOwnProperty(pet) ||
+      (!petLists.wackyPets.includes(pet) && !mountsOwned.hasOwnProperty(pet))
     ) {
       let message =
         "Cannot hatch or feed " +
@@ -318,9 +281,9 @@ function hatchFeedPets() {
           " eggs (need " +
           (numEachEggNeededTotal[species] -
             numEachEggOwnedUsed[species] +
-            (user.items.eggs[species] || 0)) +
+            (userData.items.eggs[species] || 0)) +
           ", have " +
-          (user.items.eggs[species] || 0) +
+          (userData.items.eggs[species] || 0) +
           ")";
       }
       if (numEachPotionOwnedUsed[color] - numEachPotionNeededTotal[color] < 0) {
@@ -332,9 +295,9 @@ function hatchFeedPets() {
           " hatching potions (need " +
           (numEachPotionNeededTotal[color] -
             numEachPotionOwnedUsed[color] +
-            (user.items.hatchingPotions[color] || 0)) +
+            (userData.items.hatchingPotions[color] || 0)) +
           ", have " +
-          (user.items.hatchingPotions[color] || 0) +
+          (userData.items.hatchingPotions[color] || 0) +
           ")";
       }
       console.log(message);
@@ -343,43 +306,236 @@ function hatchFeedPets() {
 }
 
 /**
- * feedExtraFoodConservative(pet, feedingsNeeded, speciesReadable, colorReadable, numEachUsableFoodOwned, numEachFoodTypeOwned, numEachFoodTypeNeeded, contentData)
- *
+ * Priority-based pet hatching and feeding strategy.
+ * 
+ * Hatching priority (in order):
+ * 1. Standard pets (basic colors)
+ * 2. Standard pets (magic/premium potions)
+ * 3. Quest pets (basic colors)
+ * 4. Wacky pets
+ * Within each group, sorted alphabetically by species.
+ * 
+ * Feeding priority (in order):
+ * 1. Basic color pets (standard + quest) - favorite food only (+5 per feeding)
+ * 2. Magic potion pets (premium colors) - any leftover food (+5 per feeding)
+ * Wacky pets are skipped (cannot become mounts).
+ * Within each group, prioritizes pets closest to becoming mounts.
+ * 
+ * Run this function whenever the player gets eggs, hatching potions,
+ * or food: whenever a task is scored, and whenever a quest is completed.
+ * 
+ * @returns {void}
+ */
+function hatchFeedPetsPriority() {
+  // if time limit, return
+  if (webhook || installing) {
+    return;
+  }
+
+  // get pet data using shared functions
+  let petLists = getPetLists();
+  let basicColors = getBasicColors();
+  let { standardPetSet, questPetSet, premiumPetSet } = getPetCategorySets();
+
+  // get user data
+  let userData = getUser(true);
+
+  // get owned eggs and potions (local copies for tracking)
+  let eggsOwned = Object.assign({}, userData.items.eggs);
+  let potionsOwned = Object.assign({}, userData.items.hatchingPotions);
+
+  // get owned pets and mounts using shared functions
+  let petsOwned = getOwnedPets(petLists.allNonSpecialPets);
+  let mountsOwned = getOwnedMounts(petLists.allNonSpecialPets);
+
+  // get owned food using shared function
+  let foodOwned = getUsableFood();
+
+  // ==================== HATCHING ====================
+
+  // build list of pets that can be hatched
+  let petsToHatch = [];
+
+  for (let pet of petLists.allNonSpecialPets) {
+    // skip if already have the pet
+    if (petsOwned.hasOwnProperty(pet)) {
+      continue;
+    }
+
+    let [species, color] = pet.split("-");
+
+    // check if we have egg and potion
+    if (hasEnoughResources(species, color, eggsOwned, potionsOwned)) {
+      let isWacky = petLists.wackyPets.includes(pet);
+      let isStandard = standardPetSet.has(pet);
+      let isQuest = questPetSet.has(pet);
+      let isPremium = premiumPetSet.has(pet);
+
+      // determine hatching priority group (lower = higher priority)
+      let priorityGroup;
+      if (isStandard) {
+        priorityGroup = HATCH_PRIORITY.STANDARD_BASIC;
+      } else if (isPremium) {
+        priorityGroup = HATCH_PRIORITY.PREMIUM;
+      } else if (isQuest) {
+        priorityGroup = HATCH_PRIORITY.QUEST;
+      } else if (isWacky) {
+        priorityGroup = HATCH_PRIORITY.WACKY;
+      }
+
+      petsToHatch.push({ pet, species, color, priorityGroup });
+    }
+  }
+
+  // sort by priority group, then alphabetically by species
+  petsToHatch.sort((a, b) => {
+    if (a.priorityGroup !== b.priorityGroup) {
+      return a.priorityGroup - b.priorityGroup;
+    }
+    // alphabetically by species within the same group
+    return a.species.localeCompare(b.species);
+  });
+
+  // hatch pets in priority order
+  let currentPriorityGroup = 0;
+  let priorityGroupNames = {
+    [HATCH_PRIORITY.STANDARD_BASIC]: "standard pets (basic colors)",
+    [HATCH_PRIORITY.PREMIUM]: "premium + quest pets",
+    [HATCH_PRIORITY.WACKY]: "wacky pets",
+  };
+
+  for (let { pet, species, color, priorityGroup } of petsToHatch) {
+    // re-check resources (may have been consumed by earlier hatches in this loop)
+    if (!hasEnoughResources(species, color, eggsOwned, potionsOwned)) {
+      continue;
+    }
+
+    // log when entering a new priority group
+    if (priorityGroup !== currentPriorityGroup) {
+      currentPriorityGroup = priorityGroup;
+      console.log("Hatching " + priorityGroupNames[priorityGroup] + "...");
+    }
+
+    hatchPet(species, color);
+    eggsOwned[species]--;
+    potionsOwned[color]--;
+    petsOwned[pet] = NEWLY_HATCHED_FED;
+
+    if (interruptLoop()) return;
+  }
+
+  // ==================== FEEDING ====================
+
+  // build list of feedable pets with their priority
+  // Priority 1 = basic color pets (use favorite food), Priority 2 = magic potion pets (use any food)
+  let petsToFeed = [];
+
+  for (let [pet, fedAmount] of Object.entries(petsOwned)) {
+    // wacky pets can't become mounts - skip
+    if (petLists.wackyPets.includes(pet)) continue;
+    // already have mount - skip
+    if (mountsOwned.hasOwnProperty(pet)) continue;
+
+    let [species, color] = pet.split("-");
+    let hunger = MOUNT_THRESHOLD - fedAmount; // how much more food needed to become mount
+
+    if (hunger <= 0) continue;
+
+    let isBasicColor = basicColors.includes(color);
+
+    // determine feeding priority based on food efficiency
+    let feedPriority;
+    if (standardPetSet.has(pet)) {
+      feedPriority = FEED_PRIORITY.STANDARD;
+    } else if (premiumPetSet.has(pet)) {
+      feedPriority = FEED_PRIORITY.PREMIUM; // premium pets use any food
+    } else if (questPetSet.has(pet)) {
+      feedPriority = FEED_PRIORITY.QUEST; // quest pets have basic colors
+    } else {
+      continue; // unknown pet type
+    }
+
+    petsToFeed.push({ pet, species, color, hunger, feedPriority, isBasicColor });
+  }
+
+  // sort by feed priority first, then by hunger (closest to mount first)
+  petsToFeed.sort((a, b) => {
+    if (a.feedPriority !== b.feedPriority) {
+      return a.feedPriority - b.feedPriority;
+    }
+    return a.hunger - b.hunger;
+  });
+
+  // feed all pets in priority order
+  console.log("Feeding pets...");
+
+  for (let { pet, species, color, hunger, isBasicColor } of petsToFeed) {
+    let speciesReadable = makeReadable(species);
+    let colorReadable = makeReadable(color);
+
+    // get foods this pet can eat
+    let foods = isBasicColor
+      ? getFavoriteFoods(color)
+      : Object.keys(foodOwned).sort((a, b) => (foodOwned[b] || 0) - (foodOwned[a] || 0));
+
+    for (let food of foods) {
+      let amount = foodOwned[food] || 0;
+      if (amount <= 0 || hunger <= 0) continue;
+
+      let feedings = Math.min(Math.ceil(hunger / FOOD_POINTS_FAVORITE), amount);
+      feedPet(pet, food, feedings, speciesReadable, colorReadable);
+
+      foodOwned[food] -= feedings;
+      if (foodOwned[food] <= 0) delete foodOwned[food];
+      hunger -= feedings * FOOD_POINTS_FAVORITE;
+
+      if (interruptLoop()) return;
+    }
+
+    // hatch replacement if pet became a mount
+    if (hunger <= 0) {
+      tryHatchReplacement(species, color, eggsOwned, potionsOwned);
+    }
+    if (interruptLoop()) return;
+  }
+}
+
+/*************************************\
+ *        HELPER FUNCTIONS           *
+\*************************************/
+
+/**
  * Feeds a pet with extra food (food not needed for basic color mounts).
- * Used by the conservative strategy. Returns true if pet became a mount.
+ * Used by the conservative strategy.
+ * 
+ * @param {string} pet - Pet key in format "Species-Color"
+ * @param {number} feedingsNeeded - Number of feedings needed to reach mount
+ * @param {string} speciesReadable - Human-readable species name
+ * @param {string} colorReadable - Human-readable color name
+ * @param {Object.<string, number>} foodOwned - Food inventory keyed by food name
+ * @param {Object.<string, number>} foodByType - Food totals keyed by target color
+ * @param {Object.<string, number>} numEachFoodTypeNeeded - Food needed per color
+ * @param {Object} contentData - Habitica content data from API
+ * @returns {boolean} True if pet became a mount
  */
 function feedExtraFoodConservative(
   pet,
   feedingsNeeded,
   speciesReadable,
   colorReadable,
-  numEachUsableFoodOwned,
-  numEachFoodTypeOwned,
+  foodOwned,
+  foodByType,
   numEachFoodTypeNeeded,
   contentData
 ) {
-  // for each usable food owned, sort by amount (highest first)
-  let foodsOwnedSorted = [];
-  for (let [food, amount] of Object.entries(numEachUsableFoodOwned)) {
-    // add to sorted food list (binary insertion)
-    let low = 0;
-    let high = foodsOwnedSorted.length;
-    while (low < high) {
-      let mid = Math.floor((low + high) / 2);
-      if (foodsOwnedSorted[mid][1] > amount) {
-        low = mid + 1;
-      } else {
-        high = mid;
-      }
-    }
-    foodsOwnedSorted.splice(low, 0, [food, amount]);
-  }
+  // sort foods by amount owned (highest first)
+  let foodsSorted = Object.entries(foodOwned).sort((a, b) => b[1] - a[1]);
 
   // for each food in sorted list
-  for (let [food, amount] of foodsOwnedSorted) {
-    // if extra
+  for (let [food, amount] of foodsSorted) {
+    // check if this food is "extra" (not needed for basic mounts)
     let target = contentData.food[food].target;
-    let extra = numEachFoodTypeOwned[target] - numEachFoodTypeNeeded[target];
+    let extra = foodByType[target] - numEachFoodTypeNeeded[target];
     if (extra > 0) {
       // calculate feedings
       let feedings = Math.min(feedingsNeeded, amount, extra);
@@ -389,11 +545,11 @@ function feedExtraFoodConservative(
 
       // update data
       feedingsNeeded -= feedings;
-      numEachUsableFoodOwned[food] -= feedings;
-      if (numEachUsableFoodOwned[food] <= 0) {
-        delete numEachUsableFoodOwned[food];
+      foodOwned[food] -= feedings;
+      if (foodOwned[food] <= 0) {
+        delete foodOwned[food];
       }
-      numEachFoodTypeOwned[target] -= feedings;
+      foodByType[target] -= feedings;
 
       // stop feeding if full
       if (feedingsNeeded <= 0) {
@@ -402,4 +558,237 @@ function feedExtraFoodConservative(
     }
   }
   return false;
+}
+
+/**
+ * Hatches a replacement pet if resources are available.
+ * Called after a pet becomes a mount to immediately hatch another.
+ * 
+ * @param {string} species - Pet species (e.g., "Wolf", "Fox")
+ * @param {string} color - Potion color (e.g., "Base", "Golden")
+ * @param {Object.<string, number>} eggsOwned - Mutable egg inventory
+ * @param {Object.<string, number>} potionsOwned - Mutable potion inventory
+ * @returns {void}
+ */
+function tryHatchReplacement(species, color, eggsOwned, potionsOwned) {
+  if (hasEnoughResources(species, color, eggsOwned, potionsOwned)) {
+    let speciesReadable = makeReadable(species);
+    let colorReadable = makeReadable(color);
+    console.log("Hatching replacement " + colorReadable + " " + speciesReadable);
+    hatchPet(species, color);
+    eggsOwned[species]--;
+    potionsOwned[color]--;
+  }
+}
+
+/**
+ * Checks if there are eggs and potions available for a given species/color.
+ * 
+ * @param {string} species - Pet species (e.g., "Wolf", "Fox")
+ * @param {string} color - Potion color (e.g., "Base", "Golden")
+ * @param {Object.<string, number>} eggsOwned - Egg inventory keyed by species
+ * @param {Object.<string, number>} potionsOwned - Potion inventory keyed by color
+ * @returns {boolean} True if at least 1 egg and 1 potion are available
+ */
+function hasEnoughResources(species, color, eggsOwned, potionsOwned) {
+  return (eggsOwned[species] || 0) > 0 && (potionsOwned[color] || 0) > 0;
+}
+
+/**
+ * Returns categorized lists of all hatchable pets from content data.
+ * Used by both hatchFeedPets strategies.
+ * 
+ * @returns {{nonWackyNonSpecialPets: string[], wackyPets: string[], allNonSpecialPets: string[]}} Pet lists by category
+ */
+function getPetLists() {
+  let contentData = getContent();
+  let nonWackyNonSpecialPets = Object.keys(contentData.pets)
+    .concat(Object.keys(contentData.premiumPets))
+    .concat(Object.keys(contentData.questPets));
+  let wackyPets = Object.keys(contentData.wackyPets);
+  let allNonSpecialPets = nonWackyNonSpecialPets.concat(wackyPets);
+
+  return {
+    nonWackyNonSpecialPets: nonWackyNonSpecialPets,
+    wackyPets: wackyPets,
+    allNonSpecialPets: allNonSpecialPets,
+  };
+}
+
+/**
+ * Returns an array of basic/drop hatching potion colors.
+ * These colors have favorite foods (e.g., Base, White, Desert, Red, etc.).
+ * 
+ * @returns {string[]} Array of basic color names
+ */
+function getBasicColors() {
+  return Object.keys(getContent().dropHatchingPotions);
+}
+
+/**
+ * Returns Sets for classifying pets by category.
+ * 
+ * @returns {{standardPetSet: Set<string>, questPetSet: Set<string>, premiumPetSet: Set<string>}} Pet category sets
+ */
+function getPetCategorySets() {
+  let contentData = getContent();
+  return {
+    standardPetSet: new Set(Object.keys(contentData.pets)),
+    questPetSet: new Set(Object.keys(contentData.questPets)),
+    premiumPetSet: new Set(Object.keys(contentData.premiumPets)),
+  };
+}
+
+/**
+ * Returns an object of owned non-special pets with their fed amounts.
+ * Pet amount meanings: 5 = newly hatched, >5 = fed, -1 = mount but no pet
+ * 
+ * @param {string[]} allNonSpecialPets - List of all non-special pet keys to filter by
+ * @returns {Object.<string, number>} Owned pets keyed by pet key with fed amount as value
+ */
+function getOwnedPets(allNonSpecialPets) {
+  let petsOwned = {};
+  for (let [pet, amount] of Object.entries(getUser().items.pets)) {
+    if (amount > 0 && allNonSpecialPets.includes(pet)) {
+      petsOwned[pet] = amount;
+    }
+  }
+  return petsOwned;
+}
+
+/**
+ * Returns an object of owned non-special mounts.
+ * 
+ * @param {string[]} allNonSpecialPets - List of all non-special pet keys to filter by
+ * @returns {Object.<string, boolean>} Owned mounts keyed by mount key
+ */
+function getOwnedMounts(allNonSpecialPets) {
+  let mountsOwned = {};
+  for (let [mount, owned] of Object.entries(getUser().items.mounts)) {
+    if (owned && allNonSpecialPets.includes(mount)) {
+      mountsOwned[mount] = true;
+    }
+  }
+  return mountsOwned;
+}
+
+/**
+ * Returns an object of usable food based on ONLY_USE_DROP_FOOD setting.
+ * Excludes Saddles and food with 0 quantity.
+ * 
+ * @returns {Object.<string, number>} Usable food keyed by food name with quantity as value
+ */
+function getUsableFood() {
+  let foodOwned = {};
+  let contentData = getContent();
+  for (let [food, amount] of Object.entries(getUser().items.food)) {
+    if (food !== "Saddle" && amount > 0) {
+      if (ONLY_USE_DROP_FOOD !== true || contentData.food[food].canDrop) {
+        foodOwned[food] = amount;
+      }
+    }
+  }
+  return foodOwned;
+}
+
+/**
+ * Returns usable food and also groups it by target color type.
+ * Used by conservative strategy which needs food totals per color.
+ * 
+ * @returns {{foodOwned: Object.<string, number>, foodByType: Object.<string, number>}} Food inventory and totals by color
+ */
+function getUsableFoodWithTypes() {
+  let foodOwned = {};
+  let foodByType = {};
+  let contentData = getContent();
+
+  for (let [food, amount] of Object.entries(getUser().items.food)) {
+    if (food !== "Saddle" && (ONLY_USE_DROP_FOOD !== true || contentData.food[food].canDrop)) {
+      if (amount > 0) {
+        foodOwned[food] = amount;
+      }
+      let target = contentData.food[food].target;
+      foodByType[target] = (foodByType[target] || 0) + amount;
+    }
+  }
+
+  return { foodOwned, foodByType };
+}
+
+/**
+ * Converts CamelCase names to "Camel Case" format for display.
+ * 
+ * @param {string} name - CamelCase name to convert
+ * @returns {string} Human-readable name with spaces
+ */
+function makeReadable(name) {
+  return name.replaceAll(/(?<!^)([A-Z])/g, " $1");
+}
+
+/**
+ * Hatches a pet via the Habitica API.
+ * Logs the action and returns the API response.
+ * 
+ * @param {string} species - Pet species (e.g., "Wolf", "Fox")
+ * @param {string} color - Potion color (e.g., "Base", "Golden")
+ * @returns {Object} API response from Habitica
+ */
+function hatchPet(species, color) {
+  let speciesReadable = makeReadable(species);
+  let colorReadable = makeReadable(color);
+  console.log("Hatching " + colorReadable + " " + speciesReadable);
+  return fetch(
+    "https://habitica.com/api/v3/user/hatch/" + species + "/" + color,
+    POST_PARAMS
+  );
+}
+
+/**
+ * Feeds a pet via the Habitica API.
+ * Logs the action and returns the API response.
+ * 
+ * @param {string} pet - Pet key in format "Species-Color"
+ * @param {string} food - Food key (e.g., "Meat", "Fish")
+ * @param {number} amount - Number of times to feed
+ * @param {string} speciesReadable - Human-readable species name for logging
+ * @param {string} colorReadable - Human-readable color name for logging
+ * @returns {Object} API response from Habitica
+ */
+function feedPet(pet, food, amount, speciesReadable, colorReadable) {
+  console.log(
+    "Feeding " +
+    colorReadable +
+    " " +
+    speciesReadable +
+    " " +
+    amount +
+    " " +
+    food
+  );
+  return fetch(
+    "https://habitica.com/api/v3/user/feed/" +
+    pet +
+    "/" +
+    food +
+    "?amount=" +
+    amount,
+    POST_PARAMS
+  );
+}
+
+/**
+ * Returns an array of food keys that are favorites for the given color.
+ * 
+ * @param {string} color - Basic color name (e.g., "Base", "Golden")
+ * @returns {string[]} Array of food keys that are favorites for this color
+ */
+function getFavoriteFoods(color) {
+  let favorites = [];
+  let contentData = getContent();
+  for (let [foodKey, foodData] of Object.entries(contentData.food)) {
+    if (foodKey !== "Saddle" && foodData.target === color) {
+      favorites.push(foodKey);
+    }
+  }
+  return favorites;
 }
