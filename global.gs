@@ -1067,64 +1067,128 @@ function getContent(updated) {
 }
 
 /**
+ * Counts eggs and hatching potions owned/used by a member, starting from
+ * their inventory and adding consumed resources from hatched pets and mounts.
+ *
+ * @param {Object} items - Member's items object (items.eggs, items.hatchingPotions, items.pets, items.mounts)
+ * @param {string[]} [petFilter] - Optional list of pet keys to include. If omitted, all pets and mounts are counted.
+ * @returns {{eggsOwnedUsed: Object.<string, number>, potionsOwnedUsed: Object.<string, number>}}
+ */
+function countEggsPotionsOwnedUsed(items, petFilter) {
+  let eggsOwnedUsed = {};
+  let potionsOwnedUsed = {};
+
+  for (let [key, amount] of Object.entries(items.eggs || {})) {
+    eggsOwnedUsed[key] = amount;
+  }
+  for (let [key, amount] of Object.entries(items.hatchingPotions || {})) {
+    potionsOwnedUsed[key] = amount;
+  }
+
+  if (petFilter) {
+    for (let [petKey, amount] of Object.entries(items.pets || {})) {
+      if (amount > 0 && petFilter.includes(petKey)) {
+        let species = petKey.split("-")[0];
+        let color = petKey.split("-")[1];
+        eggsOwnedUsed[species] = (eggsOwnedUsed[species] || 0) + 1;
+        potionsOwnedUsed[color] = (potionsOwnedUsed[color] || 0) + 1;
+      }
+    }
+    for (let [mountKey, owned] of Object.entries(items.mounts || {})) {
+      if (owned && petFilter.includes(mountKey)) {
+        let species = mountKey.split("-")[0];
+        let color = mountKey.split("-")[1];
+        eggsOwnedUsed[species] = (eggsOwnedUsed[species] || 0) + 1;
+        potionsOwnedUsed[color] = (potionsOwnedUsed[color] || 0) + 1;
+      }
+    }
+  } else {
+    for (let [petKey, amount] of Object.entries(items.pets || {})) {
+      if (amount > 0) {
+        let species = petKey.split("-")[0];
+        let color = petKey.split("-")[1];
+        eggsOwnedUsed[species] = (eggsOwnedUsed[species] || 0) + 1;
+        potionsOwnedUsed[color] = (potionsOwnedUsed[color] || 0) + 1;
+      }
+    }
+    for (let mountKey of Object.keys(items.mounts || {})) {
+      let species = mountKey.split("-")[0];
+      let color = mountKey.split("-")[1];
+      eggsOwnedUsed[species] = (eggsOwnedUsed[species] || 0) + 1;
+      potionsOwnedUsed[color] = (potionsOwnedUsed[color] || 0) + 1;
+    }
+  }
+
+  return { eggsOwnedUsed: eggsOwnedUsed, potionsOwnedUsed: potionsOwnedUsed };
+}
+
+/**
+ * Computes how many eggs and potions of each type the player needs to hatch
+ * all non-special pets and mount replacements, and how many they currently
+ * own or have used.
+ *
+ * @returns {{
+ *   eggsNeeded: Object.<string, number>,
+ *   potionsNeeded: Object.<string, number>,
+ *   eggsOwnedUsed: Object.<string, number>,
+ *   potionsOwnedUsed: Object.<string, number>
+ * }}
+ */
+function getEggPotionNeeds() {
+  let petLists = getPetLists();
+
+  let eggsNeeded = {};
+  let potionsNeeded = {};
+  for (let pet of petLists.nonWackyNonSpecialPets) {
+    let species = pet.split("-")[0];
+    let color = pet.split("-")[1];
+    eggsNeeded[species] = (eggsNeeded[species] || 0) + RESOURCES_PER_NON_WACKY;
+    potionsNeeded[color] = (potionsNeeded[color] || 0) + RESOURCES_PER_NON_WACKY;
+  }
+  for (let pet of petLists.wackyPets) {
+    let species = pet.split("-")[0];
+    let color = pet.split("-")[1];
+    eggsNeeded[species] = (eggsNeeded[species] || 0) + RESOURCES_PER_WACKY;
+    potionsNeeded[color] = (potionsNeeded[color] || 0) + RESOURCES_PER_WACKY;
+  }
+
+  let counts = countEggsPotionsOwnedUsed(getUser().items, petLists.allNonSpecialPets);
+
+  for (let egg of Object.keys(eggsNeeded)) {
+    if (!(egg in counts.eggsOwnedUsed)) counts.eggsOwnedUsed[egg] = 0;
+  }
+  for (let potion of Object.keys(potionsNeeded)) {
+    if (!(potion in counts.potionsOwnedUsed)) counts.potionsOwnedUsed[potion] = 0;
+  }
+
+  return {
+    eggsNeeded: eggsNeeded,
+    potionsNeeded: potionsNeeded,
+    eggsOwnedUsed: counts.eggsOwnedUsed,
+    potionsOwnedUsed: counts.potionsOwnedUsed,
+  };
+}
+
+/**
  * Calculates quest completion percentages for the party.
  * Adapted from Quest Tracker by @bumbleshoot.
- * 
+ *
  * @returns {{questKey: string, questName: string, completionPercentage: number}[]} Array of quest completion data
  */
 function getQuestCompletionData() {
   // if no party, party = user
-  let partyMembers;
+  var partyMembers;
   if (typeof getMembers() === "undefined") {
     partyMembers = [getUser()];
   } else {
     partyMembers = members;
   }
 
-  // get # each egg & hatching potion owned/used for each member
+  // count eggs & hatching potions owned/used for each member
   for (let member of partyMembers) {
-    member.numEachEggOwnedUsed = Object.assign({}, member.items.eggs);
-    member.numEachPotionOwnedUsed = Object.assign(
-      {},
-      member.items.hatchingPotions
-    );
-    for (let [pet, amount] of Object.entries(member.items.pets)) {
-      if (amount > 0) {
-        // 5 = newly hatched pet, >5 = fed pet, -1 = mount but no pet
-        pet = pet.split("-");
-        let species = pet[0];
-        let color = pet[1];
-        if (member.numEachEggOwnedUsed.hasOwnProperty(species)) {
-          member.numEachEggOwnedUsed[species] =
-            member.numEachEggOwnedUsed[species] + 1;
-        } else {
-          member.numEachEggOwnedUsed[species] = 1;
-        }
-        if (member.numEachPotionOwnedUsed.hasOwnProperty(color)) {
-          member.numEachPotionOwnedUsed[color] =
-            member.numEachPotionOwnedUsed[color] + 1;
-        } else {
-          member.numEachPotionOwnedUsed[color] = 1;
-        }
-      }
-    }
-    for (let mount of Object.keys(member.items.mounts)) {
-      mount = mount.split("-");
-      let species = mount[0];
-      let color = mount[1];
-      if (member.numEachEggOwnedUsed.hasOwnProperty(species)) {
-        member.numEachEggOwnedUsed[species] =
-          member.numEachEggOwnedUsed[species] + 1;
-      } else {
-        member.numEachEggOwnedUsed[species] = 1;
-      }
-      if (member.numEachPotionOwnedUsed.hasOwnProperty(color)) {
-        member.numEachPotionOwnedUsed[color] =
-          member.numEachPotionOwnedUsed[color] + 1;
-      } else {
-        member.numEachPotionOwnedUsed[color] = 1;
-      }
-    }
+    let counts = countEggsPotionsOwnedUsed(member.items);
+    member.numEachEggOwnedUsed = counts.eggsOwnedUsed;
+    member.numEachPotionOwnedUsed = counts.potionsOwnedUsed;
   }
 
   // get lists of premium eggs, premium hatching potions & wacky hatching potions

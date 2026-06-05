@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI agents when working with code in this repository.
 
 ## Project overview
 
@@ -26,7 +26,7 @@ Automations are not called directly. Instead, `processTrigger()` and `processWeb
 | File | Purpose |
 |---|---|
 | `setup.gs` | **User-editable**: all feature flags and tuning constants (`const USER_ID`, `AUTO_CRON`, `BANNED_SCROLLS`, etc.). Also contains `install()`, `uninstall()`, `validateConstants()`, trigger/webhook management. |
-| `global.gs` | Core orchestration: entry points, queue processor, skill dispatchers, GAS API wrappers (`fetch`, `getUser`, `getParty`, `getMembers`, `getContent`, `getTasks`/`getDailies`), `getQuestCompletionData()`. |
+ | `global.gs` | Core orchestration: entry points, queue processor, skill dispatchers, GAS API wrappers (`fetch`, `getUser`, `getParty`, `getMembers`, `getContent`, `getTasks`/`getDailies`), `getQuestCompletionData()`, `getEggPotionNeeds()`, `countEggsPotionsOwnedUsed()`. |
 | `constants.gs` | Read-only game constants (mana costs, damage formulas, thresholds). Not user-editable. |
 | `automations/*.gs` | One file per automation feature. Each implements one or more functions that are called from `processQueue()`. |
 

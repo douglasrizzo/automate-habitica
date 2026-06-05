@@ -1,7 +1,8 @@
 /**
- * Sells extra eggs, reserving RESERVE_EGGS of each type.
- * Triggers armoire purchase if AUTO_PURCHASE_ARMOIRES is enabled.
- * 
+ * Sells extra eggs beyond the amount needed for all non-special pet and mount
+ * combinations. Computes the exact need from the player's inventory, hatched
+ * pets, and mounts — no manual reserve configuration required.
+ *
  * @see https://habitica.fandom.com/wiki/Eggs
  * @returns {void}
  */
@@ -12,13 +13,25 @@ function sellExtraEggs() {
     return;
   }
 
+  let needs = getEggPotionNeeds();
+  let inventory = getUser().items.eggs;
   let logged = false;
 
   // for each egg in the player's inventory
-  for (let [egg, amount] of Object.entries(getUser(true).items.eggs)) {
+  for (let [egg, amount] of Object.entries(inventory)) {
 
-    // if player has more than RESERVE_EGGS
-    if (amount > RESERVE_EGGS) {
+    // skip egg types that are not part of any standard/quest pet combo
+    if (!(egg in needs.eggsNeeded)) {
+      continue;
+    }
+
+    let needed = needs.eggsNeeded[egg];
+    let ownedUsed = needs.eggsOwnedUsed[egg] || amount;
+    let nonInventoryUsed = ownedUsed - amount;
+    let stillNeeded = Math.max(0, needed - nonInventoryUsed);
+    let sellAmount = amount - stillNeeded;
+
+    if (sellAmount > 0) {
 
       if (!logged) {
         console.log("Selling extra eggs");
@@ -26,7 +39,7 @@ function sellExtraEggs() {
       }
 
       // sell extra eggs
-      fetch("https://habitica.com/api/v3/user/sell/eggs/" + egg + "?amount=" + (amount - RESERVE_EGGS), POST_PARAMS);
+      fetch("https://habitica.com/api/v3/user/sell/eggs/" + egg + "?amount=" + sellAmount, POST_PARAMS);
 
       // if done selling extra items, purchase armoires
       if (AUTO_PURCHASE_ARMOIRES === true && scriptProperties.getProperty("sellExtraHatchingPotions") === null && scriptProperties.getProperty("sellExtraFood") === null) {
@@ -37,9 +50,10 @@ function sellExtraEggs() {
 }
 
 /**
- * Sells extra hatching potions, reserving RESERVE_HATCHING_POTIONS of each type.
- * Triggers armoire purchase if AUTO_PURCHASE_ARMOIRES is enabled.
- * 
+ * Sells extra hatching potions beyond the amount needed for all non-special
+ * pet and mount combinations. Computes the exact need from the player's
+ * inventory, hatched pets, and mounts — no manual reserve configuration required.
+ *
  * @see https://habitica.fandom.com/wiki/Hatching_Potions
  * @returns {void}
  */
@@ -50,13 +64,25 @@ function sellExtraHatchingPotions() {
     return;
   }
 
+  let needs = getEggPotionNeeds();
+  let inventory = getUser().items.hatchingPotions;
   let logged = false;
 
   // for each hatching potion in the player's inventory
-  for (let [potion, amount] of Object.entries(getUser(true).items.hatchingPotions)) {
+  for (let [potion, amount] of Object.entries(inventory)) {
 
-    // if player has more than RESERVE_HATCHING_POTIONS
-    if (amount > RESERVE_HATCHING_POTIONS) {
+    // skip potion types that are not part of any standard/quest pet combo
+    if (!(potion in needs.potionsNeeded)) {
+      continue;
+    }
+
+    let needed = needs.potionsNeeded[potion];
+    let ownedUsed = needs.potionsOwnedUsed[potion] || amount;
+    let nonInventoryUsed = ownedUsed - amount;
+    let stillNeeded = Math.max(0, needed - nonInventoryUsed);
+    let sellAmount = amount - stillNeeded;
+
+    if (sellAmount > 0) {
 
       if (!logged) {
         console.log("Selling extra hatching potions");
@@ -64,7 +90,7 @@ function sellExtraHatchingPotions() {
       }
 
       // sell extra hatching potions
-      fetch("https://habitica.com/api/v3/user/sell/hatchingPotions/" + potion + "?amount=" + (amount - RESERVE_HATCHING_POTIONS), POST_PARAMS);
+      fetch("https://habitica.com/api/v3/user/sell/hatchingPotions/" + potion + "?amount=" + sellAmount, POST_PARAMS);
 
       // if done selling extra items, purchase armoires
       if (AUTO_PURCHASE_ARMOIRES === true && scriptProperties.getProperty("sellExtraEggs") === null && scriptProperties.getProperty("sellExtraFood") === null) {

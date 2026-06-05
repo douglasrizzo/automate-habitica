@@ -134,7 +134,11 @@ Any [gold](https://habitica.fandom.com/wiki/Gold_Points) you earn over `RESERVE_
 
 ### Auto Sell Eggs/Hatching Potions/Food
 
-Automatically sells your extra [eggs](https://habitica.fandom.com/wiki/Eggs), [hatching potions](https://habitica.fandom.com/wiki/Hatching_Potions), and/or [food](https://habitica.fandom.com/wiki/Food). You can configure how many you want to keep with `RESERVE_EGGS`, `RESERVE_HATCHING_POTIONS`, and `RESERVE_FOOD`.
+Automatically sells your extra [eggs](https://habitica.fandom.com/wiki/Eggs), [hatching potions](https://habitica.fandom.com/wiki/Hatching_Potions), and/or [food](https://habitica.fandom.com/wiki/Food).
+
+**Eggs and potions** are sold based on computed needs — the script calculates exactly how many of each egg species and potion color you need for all possible pet and mount combinations, counts what you've already consumed (inventory + hatched pets + mounts), and sells only the excess. No manual configuration required. Egg and potion types that are not part of any standard or quest pet combo (e.g., special event items) are never sold.
+
+**Food** uses a flat reserve: you configure how much to keep with `RESERVE_FOOD`. Saddles are never sold.
 
 ### Auto Hatch/Feed Pets
 

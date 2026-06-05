@@ -100,7 +100,8 @@ function selectPriorityQuest() {
             (AUTO_INVITE_PET_QUESTS === true && ["pet", "hatchingPotion"].includes(category)))));
       if (canInvite && !AUTO_INVITE_FULLY_COMPLETED_QUESTS) {
         let questCompletion = questCompletionData.find((q) => q.questKey === questKey);
-        canInvite = canInvite && questCompletion.completionPercentage < 100;
+        // world bosses and special quests are omitted from completion data, so treat missing as eligible
+        canInvite = canInvite && (!questCompletion || questCompletion.completionPercentage < 100);
       }
 
       if (canInvite) {

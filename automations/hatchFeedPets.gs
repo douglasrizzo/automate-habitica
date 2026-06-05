@@ -44,42 +44,16 @@ function hatchFeedPets() {
   let basicColors = getBasicColors();
   let contentData = getContent();
 
-  // get # each egg & hatching potion needed
-  let numEachEggNeededTotal = {};
-  let numEachPotionNeededTotal = {};
-  for (let pet of petLists.nonWackyNonSpecialPets) {
-    let [species, color] = pet.split("-");
-    numEachEggNeededTotal[species] = (numEachEggNeededTotal[species] || 0) + RESOURCES_PER_NON_WACKY;
-    numEachPotionNeededTotal[color] = (numEachPotionNeededTotal[color] || 0) + RESOURCES_PER_NON_WACKY;
-  }
-  for (let pet of petLists.wackyPets) {
-    let [species, color] = pet.split("-");
-    numEachEggNeededTotal[species] = (numEachEggNeededTotal[species] || 0) + RESOURCES_PER_WACKY;
-    numEachPotionNeededTotal[color] = (numEachPotionNeededTotal[color] || 0) + RESOURCES_PER_WACKY;
-  }
-
-  // get # each egg & hatching potion owned/used, pets & mounts owned, # each food type needed, # extra food needed
-  let numEachEggOwnedUsed = JSON.parse(JSON.stringify(contentData.eggs));
-  let numEachPotionOwnedUsed = JSON.parse(JSON.stringify(contentData.hatchingPotions));
-
-  // add owned eggs and potions to counts
+  // refresh user data and compute egg/potion needs
   let userData = getUser(true);
-  for (let egg of Object.keys(numEachEggOwnedUsed)) {
-    numEachEggOwnedUsed[egg] = userData.items.eggs[egg] || 0;
-  }
-  for (let potion of Object.keys(numEachPotionOwnedUsed)) {
-    numEachPotionOwnedUsed[potion] = userData.items.hatchingPotions[potion] || 0;
-  }
+  let needs = getEggPotionNeeds();
+  let numEachEggNeededTotal = needs.eggsNeeded;
+  let numEachPotionNeededTotal = needs.potionsNeeded;
+  let numEachEggOwnedUsed = needs.eggsOwnedUsed;
+  let numEachPotionOwnedUsed = needs.potionsOwnedUsed;
 
-  // get owned pets and add to egg/potion "used" counts
+  // get owned pets and mounts
   let petsOwned = getOwnedPets(petLists.allNonSpecialPets);
-  for (let pet of Object.keys(petsOwned)) {
-    let [species, color] = pet.split("-");
-    numEachEggOwnedUsed[species] = (numEachEggOwnedUsed[species] || 0) + 1;
-    numEachPotionOwnedUsed[color] = (numEachPotionOwnedUsed[color] || 0) + 1;
-  }
-
-  // get owned mounts and add to egg/potion "used" counts
   let mountsOwned = getOwnedMounts(petLists.allNonSpecialPets);
 
   // calculate food needs per color type
@@ -94,11 +68,9 @@ function hatchFeedPets() {
     Object.keys(contentData.dropEggs).length *
     FEEDINGS_TO_MOUNT_FAVORITE;
 
-  // process owned mounts: add to counts and reduce food needs
+  // process owned mounts: reduce food needs
   for (let mount of Object.keys(mountsOwned)) {
-    let [species, color] = mount.split("-");
-    numEachEggOwnedUsed[species] = (numEachEggOwnedUsed[species] || 0) + 1;
-    numEachPotionOwnedUsed[color] = (numEachPotionOwnedUsed[color] || 0) + 1;
+    let color = mount.split("-")[1];
     if (basicColors.includes(color)) {
       numEachFoodTypeNeeded[color] -= FEEDINGS_TO_MOUNT_FAVORITE;
     } else {

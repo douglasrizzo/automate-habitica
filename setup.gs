@@ -1,5 +1,5 @@
 /**
- * Automate Habitica+ v1.2.0 by @tetamusha
+ * Automate Habitica+ v1.3.0 by @tetamusha
  * A fork of Automate Habitica v1.0.0 by @bumbleshoot
  *
  * See GitHub pages for info & setup instructions:
@@ -46,10 +46,8 @@ const AUTO_PURCHASE_ARMOIRES = false;
 const RESERVE_GOLD = 50000;
 
 const AUTO_SELL_EGGS = false;
-const RESERVE_EGGS = 999;
 
 const AUTO_SELL_HATCHING_POTIONS = false;
-const RESERVE_HATCHING_POTIONS = 999;
 
 const AUTO_SELL_FOOD = false;
 const RESERVE_FOOD = 999;
@@ -457,23 +455,9 @@ function validateConstants() {
     valid = false;
   }
 
-  if (AUTO_SELL_EGGS === true) {
-    if (typeof RESERVE_EGGS !== "number" || !Number.isInteger(RESERVE_EGGS) || RESERVE_EGGS < 0) {
-      console.log("ERROR: RESERVE_EGGS must be a whole number greater than or equal to 0.\n\neg. const RESERVE_EGGS = 0;\n    const RESERVE_EGGS = 50;\n    const RESERVE_EGGS = 99;");
-      valid = false;
-    }
-  }
-
   if (AUTO_SELL_HATCHING_POTIONS !== true && AUTO_SELL_HATCHING_POTIONS !== false) {
     console.log("ERROR: AUTO_SELL_HATCHING_POTIONS must equal either true or false.\n\neg. const AUTO_SELL_HATCHING_POTIONS = true;\n    const AUTO_SELL_HATCHING_POTIONS = false;");
     valid = false;
-  }
-
-  if (AUTO_SELL_HATCHING_POTIONS === true) {
-    if (typeof RESERVE_HATCHING_POTIONS !== "number" || !Number.isInteger(RESERVE_HATCHING_POTIONS) || RESERVE_HATCHING_POTIONS < 0) {
-      console.log("ERROR: RESERVE_HATCHING_POTIONS must be a whole number greater than or equal to 0.\n\neg. const RESERVE_HATCHING_POTIONS = 0;\n    const RESERVE_HATCHING_POTIONS = 50;\n    const RESERVE_HATCHING_POTIONS = 999;");
-      valid = false;
-    }
   }
 
   if (AUTO_SELL_FOOD !== true && AUTO_SELL_FOOD !== false) {
