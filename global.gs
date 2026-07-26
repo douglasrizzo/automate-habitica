@@ -193,9 +193,6 @@ function processTrigger() {
   if (FORCE_START_QUESTS === true) {
     scriptProperties.setProperty("forceStartQuest", "true");
   }
-  if (AUTO_PARTY_REPORT === true) {
-    scriptProperties.setProperty("partyReport", "true");
-  }
 
   // in case GAS execution time limit was reached
   if (AUTO_PURCHASE_ARMOIRES === true) {
@@ -334,47 +331,32 @@ function processWebhook(webhookData) {
       scriptProperties.setProperty("purchaseGems", "true");
     }
     if (
-      NOTIFY_ON_QUEST_END === true &&
-      typeof webhookData.questKey !== "undefined"
-    ) {
-      scriptProperties.setProperty("notifyQuestEnded", webhookData.questKey);
-    }
-    if (
       AUTO_INVITE_GOLD_QUESTS === true ||
       AUTO_INVITE_UNLOCKABLE_QUESTS === true ||
       AUTO_INVITE_PET_QUESTS === true ||
       AUTO_INVITE_HOURGLASS_QUESTS === true
     ) {
-      let inviteFunction =
-        QUEST_INVITE_MODE === "priority"
-          ? "invitePriorityQuest"
-          : "inviteRandomQuest";
       for (let trigger of ScriptApp.getProjectTriggers()) {
-        if (
-          trigger.getHandlerFunction() === "inviteRandomQuest" ||
-          trigger.getHandlerFunction() === "invitePriorityQuest"
-        ) {
+        if (trigger.getHandlerFunction() === "invitePriorityQuest") {
           ScriptApp.deleteTrigger(trigger);
         }
       }
 
-      // in priority mode, quests with higher priority will have invites sent sooner
-      let waitTime = 0;
-      if (QUEST_INVITE_MODE === "priority" && PRIORITY_DELAY_MODE === true) {
-        let selectedQuest = selectPriorityQuest();
-        if (selectedQuest !== null) {
-          waitTime = selectedQuest.completionPercentage / 100;
-          console.log("Quest scroll with lowest completion: " + selectedQuest.questName + " (" + selectedQuest.completionPercentage.toFixed(2) + "%%)");
+      let selectedQuest = selectPriorityQuest();
+      let afterMs;
+      if (selectedQuest !== null) {
+        console.log("Quest scroll with lowest completion: " + selectedQuest.questName + " (" + selectedQuest.completionPercentage.toFixed(2) + "%)");
+        if (selectedQuest.completionPercentage < 25) {
+          afterMs = 1;
         } else {
-          console.log("No priority quest found");
+          afterMs = (selectedQuest.completionPercentage / 100) * QUEST_INVITE_MAX_DELAY_MS + QUEST_INVITE_MIN_DELAY_MS;
         }
+      } else {
+        console.log("No priority quest found");
+        afterMs = QUEST_INVITE_MIN_DELAY_MS + QUEST_INVITE_MAX_DELAY_MS;
       }
-      if (waitTime === 0) {
-        waitTime = Math.random();
-      }
-      let afterMs = waitTime * QUEST_INVITE_RANDOM_DELAY_MS + QUEST_INVITE_MIN_DELAY_MS;
       console.log("Waiting " + (afterMs / 1000 / 60).toFixed(3) + " minutes before inviting quest");
-      ScriptApp.newTrigger(inviteFunction).timeBased().after(afterMs).create();
+      ScriptApp.newTrigger("invitePriorityQuest").timeBased().after(afterMs).create();
     }
     if (AUTO_PURCHASE_ARMOIRES === true) {
       scriptProperties.setProperty("purchaseArmoires", "true");
@@ -468,12 +450,6 @@ function processQueue() {
           scriptProperties.deleteProperty("acceptQuestInvite");
           continue;
         }
-        questKey = properties["notifyQuestEnded"];
-        if (typeof questKey !== "undefined") {
-          notifyQuestEnded(questKey);
-          scriptProperties.deleteProperty("notifyQuestEnded");
-          continue;
-        }
         if (properties.hasOwnProperty("healParty")) {
           healParty();
           scriptProperties.deleteProperty("healParty");
@@ -551,11 +527,6 @@ function processQueue() {
           scriptProperties.deleteProperty("purchaseArmoires");
           continue;
         }
-        if (properties.hasOwnProperty("partyReport") && !webhook && !installing) {
-          partyReport();
-          scriptProperties.deleteProperty("partyReport");
-          continue;
-        }
         break;
       }
 
@@ -605,11 +576,6 @@ function interruptLoop() {
     if (properties.hasOwnProperty("acceptQuestInvite")) {
       acceptQuestInvite();
       scriptProperties.deleteProperty("acceptQuestInvite");
-    }
-    questKey = properties["notifyQuestEnded"];
-    if (typeof questKey !== "undefined") {
-      notifyQuestEnded(questKey);
-      scriptProperties.deleteProperty("notifyQuestEnded");
     }
     break;
   }
@@ -727,8 +693,7 @@ function fetch(url, params) {
     let spaceOutAPICalls = true;
     if (
       properties.hasOwnProperty("hideAllNotifications") ||
-      properties.hasOwnProperty("acceptQuestInvite") ||
-      properties.hasOwnProperty("notifyQuestEnded")
+      properties.hasOwnProperty("acceptQuestInvite")
     ) {
       spaceOutAPICalls = false;
     }

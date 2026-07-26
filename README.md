@@ -25,7 +25,7 @@ Forces pending [quests](https://habitica.fandom.com/wiki/Quests) to start after 
 
 ### Auto Invite Quests
 
-Whenever your party completes a quest, automatically selects a quest scroll from your inventory and invites your party to that quest. There is a randomized 5-15 min delay between quest ending and using the quest scroll, to give other party members a chance to run their quests too, and to prevent multiple simultaneous quest invitations. If `AUTO_INVITE_HOURGLASS_QUESTS` is set to `false`, the script will not use _any_ hourglass quest scrolls, even if they match the other quest categories.
+Whenever your party completes a quest, automatically selects a quest scroll from your inventory and invites your party to that quest. There is a delay of up to 10 mins between quest ending and using the quest scroll, to give other party members a chance to run their quests too, and to prevent multiple simultaneous quest invitations. If `AUTO_INVITE_HOURGLASS_QUESTS` is set to `false`, the script will not use _any_ hourglass quest scrolls, even if they match the other quest categories.
 
 You can configure which quest categories to auto-invite using these settings:
 
@@ -37,7 +37,7 @@ You can configure which quest categories to auto-invite using these settings:
 
 #### Banned Scrolls (`BANNED_SCROLLS`)
 
-You can blacklist specific quests from being auto-invited by adding their names to the `BANNED_SCROLLS` array. This works for both random and priority invite modes.
+You can blacklist specific quests from being auto-invited by adding their names to the `BANNED_SCROLLS` array. Banned quests are never selected, regardless of their completion percentage.
 
 To ban a quest, uncomment (remove the `//` before) the quest name in the `BANNED_SCROLLS` list in the script settings. For example:
 
@@ -48,59 +48,38 @@ BANNED_SCROLLS = [
 ];
 ```
 
-#### Quest Selection Mode (`QUEST_INVITE_MODE`)
+#### Quest Selection And Invite Delay
 
-When a quest ends, the script waits **5-15 minutes** before sending the next quest invite. The initial 5-minute delay gives all party members the same time to manually send invitations to their favorite quests, while the variable 10-minute wait period prevents multiple party members from sending simultaneous quest invitations.
+The script always invites the quest with the **lowest [quest completion percentage](#quest-completion-percentage)** among your eligible scrolls. This helps your party work towards completing all quests together, prioritizing quests that fewer party members have finished.
 
-The `QUEST_INVITE_MODE` setting controls how the script chooses which quest to invite:
+The delay between the previous quest ending and the invite being sent is derived from that same percentage, so the least completed quests get invited soonest:
 
-- `"random"` mode
-  - Selects a random quest scroll from your eligible quests.
-  - Sends the invite after a random delay between 5-15 minutes.
-- `"priority"` mode
-  - Selects the quest with the **lowest [quest completion percentage](#quest-completion-percentage)**. This helps your party work towards completing all quests together, prioritizing quests that fewer party members have finished.
-  - If `PRIORITY_DELAY_MODE = true`:
-    - Send the invite a after a delay which is linearly proportional to [quest completion percentage](#quest-completion-percentage):
-      - 0% completion -> 5 minutes
-      - 100% completion -> 15 minutes
-  - Else, the behavior is the same as in `"random"` mode.
+| Quest completion | Delay before invite |
+| ---------------- | ------------------- |
+| Below 25%        | Immediate           |
+| 25%              | ~4.75 minutes       |
+| 100%             | 10 minutes          |
+
+Between 25% and 100%, the delay grows linearly from `QUEST_INVITE_MIN_DELAY_MS` (3 mins) to `QUEST_INVITE_MIN_DELAY_MS + QUEST_INVITE_MAX_DELAY_MS` (10 mins). If no eligible quest is found, the script waits the full 10 minutes before retrying.
+
+The delay gives all party members a chance to manually send invitations to their favorite quests, and prevents multiple party members from sending simultaneous quest invitations. Quests barely anyone has started are invited immediately, since they are the ones the party benefits most from running.
 
 <details>
 <summary>A note on fairness</summary>
 
 ---
 
-If you are worried about fairness in the quest invite process, consider that, while random mode gives all players an equal chance of inviting the party to a quest:
+If you are worried about fairness in the quest invite process, consider that inviting quests in a fixed priority order rather than at random:
 
-1. It does not allow party members to select which invitation they will send. This is what the initial delay is for.
 1. Habitica offers no achievements or benefits for being the party member who starts a quest. The person who sends the invite gains nothing over those who simply accept it.
-1. The only apparent benefit of random mode is that it makes party members spend their quest scrolls equally. However, this argument doesn't hold up: players who spend more scrolls still receive the full individual rewards from those quests.
-   Scrolls are simply traded for rewards, there is no benefit to hoarding them. In fact, priority mode allows players with lots of rare scrolls to use the party's help to convert them into rewards while sharing those rewards with the party.
+1. Random selection would spread scroll usage evenly across party members, but that is not actually a benefit: players who spend more scrolls still receive the full individual rewards from those quests.
+   Scrolls are simply traded for rewards, there is no benefit to hoarding them. In fact, priority selection allows players with lots of rare scrolls to use the party's help to convert them into rewards while sharing those rewards with the party.
 
-This makes priority mode objectively better: it systematically completes quests that fewer members have finished, maximizes reward distribution across the party, and ensures no scroll sits unused in anyone's inventory.
+Priority selection systematically completes quests that fewer members have finished, maximizes reward distribution across the party, and ensures no scroll sits unused in anyone's inventory.
 
 ---
 
 </details>
-
-### Party Report
-
-Periodically sends a message to your [party](https://habitica.fandom.com/wiki/Party) chat with recommended [quests](https://habitica.fandom.com/wiki/Quests) sorted by [completion percentage](#quest-completion-percentage) (lowest first). This helps your party coordinate which quests to focus on.
-
-The message includes:
-
-- Up to `PARTY_REPORT_QUEST_COUNT` quests with the lowest completion percentage
-- For each quest, up to 3 random party members who have scrolls for that quest
-
-Configure with:
-
-- `AUTO_PARTY_REPORT` - Enable/disable the party report
-- `PARTY_REPORT_INTERVAL_DAYS` - How often to send the report (in days)
-- `PARTY_REPORT_QUEST_COUNT` - Number of quests to include in the report
-
-### Notify On Quest End
-
-Sends a [private message](https://habitica.fandom.com/wiki/Private_Messaging) to you on Habitica to notify you whenever your [party](https://habitica.fandom.com/wiki/Party) completes a [quest](https://habitica.fandom.com/wiki/Quests). The message includes the name of the quest that was completed.
 
 ### Auto Cast Skills
 
@@ -224,7 +203,7 @@ Hides [notifications](https://habitica.fandom.com/wiki/Notifications?so=search#P
 
 ## Quest Completion Percentage
 
-The quest completion percentage is used by [Auto Invite Quests (priority mode)](#quest-selection-mode-quest_invite_mode) and [Party Report](#party-report) to determine which quests your party should focus on.
+The quest completion percentage is used by [Auto Invite Quests](#quest-selection-and-invite-delay) to determine which quests your party should focus on, and how soon to invite them.
 
 ### How It's Calculated
 

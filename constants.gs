@@ -66,11 +66,11 @@ const HTTP_SUCCESS_MAX = 300;
 /** HTTP status code threshold for server errors */
 const HTTP_SERVER_ERROR_MIN = 500;
 
-/** Minimum delay before quest invite trigger in ms (5 minutes) */
-const QUEST_INVITE_MIN_DELAY_MS = 300000;
+/** Minimum delay before quest invite trigger in ms (3 minutes) */
+const QUEST_INVITE_MIN_DELAY_MS = 180000;
 
-/** Maximum additional random delay for quest invite trigger in ms (10 minutes) */
-const QUEST_INVITE_RANDOM_DELAY_MS = 600000;
+/** Maximum additional delay for quest invite trigger in ms (7 minutes, total max = 10 minutes) */
+const QUEST_INVITE_MAX_DELAY_MS = 420000;
 
 /** Number of eggs needed per species to have all basic color pets/mounts. @see https://habitica.fandom.com/wiki/Pets */
 const EGGS_FOR_COMPLETE_SPECIES = 20;
@@ -164,15 +164,6 @@ const MANA_COST_CHILLING_FROST = 40;
 
 /** Divisor for Burst of Flames damage calculation: damage = int / intDivisor. @see https://habitica.fandom.com/wiki/Burst_of_Flames */
 const BURST_OF_FLAMES_INT_DIVISOR = 10;
-
-
-// PARTY REPORT CONSTANTS
-
-/** Maximum number of random scroll owners to display per quest */
-const MAX_SCROLL_OWNERS_DISPLAY = 3;
-
-/** Emoji options for random selection in report header */
-const REPORT_EMOJIS = ["🎯", "⚔️", "🗡️", "🐉", "🏰", "🧙", "🦄", "🔮", "✨", "🌟", "💎", "🏆", "📜", "🎲", "🧭"];
 
 
 // PAUSE/RESUME DAMAGE CONSTANTS

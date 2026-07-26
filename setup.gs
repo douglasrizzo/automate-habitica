@@ -25,11 +25,7 @@ const AUTO_INVITE_UNLOCKABLE_QUESTS = false;
 const AUTO_INVITE_PET_QUESTS = false;
 const AUTO_INVITE_HOURGLASS_QUESTS = false;
 const AUTO_INVITE_FULLY_COMPLETED_QUESTS = true;
-const QUEST_INVITE_MODE = "priority"; // "random" or "priority" (priority selects quest with lowest party completion %)
-const PRIORITY_DELAY_MODE = false;
 const PM_WHEN_OUT_OF_QUEST_SCROLLS = true;
-
-const NOTIFY_ON_QUEST_END = true;
 
 const AUTO_CAST_SKILLS = false;
 
@@ -55,10 +51,6 @@ const RESERVE_FOOD = 999;
 const AUTO_HATCH_FEED_PETS = false;
 const HATCH_FEED_MODE = "priority"; // "conservative" or "priority" (priority hatches/feeds without strict requirements)
 const ONLY_USE_DROP_FOOD = true;
-
-const AUTO_PARTY_REPORT = false; // send periodic quest recommendations to party chat (party leaders only)
-const PARTY_REPORT_INTERVAL_DAYS = 7; // how often to send the party report (in days)
-const PARTY_REPORT_QUEST_COUNT = 30; // number of quests to list in the report
 
 const HIDE_PARTY_NOTIFICATIONS = false;
 const HIDE_ALL_GUILD_NOTIFICATIONS = false;
@@ -369,13 +361,6 @@ function validateConstants() {
     AUTO_INVITE_PET_QUESTS === true ||
     AUTO_INVITE_HOURGLASS_QUESTS === true
   ) {
-    if (QUEST_INVITE_MODE !== "random" && QUEST_INVITE_MODE !== "priority") {
-      console.log(
-        'ERROR: QUEST_INVITE_MODE must equal either "random" or "priority".\n\neg. const QUEST_INVITE_MODE = "random";\n    const QUEST_INVITE_MODE = "priority";'
-      );
-      valid = false;
-    }
-
     if (
       PM_WHEN_OUT_OF_QUEST_SCROLLS !== true &&
       PM_WHEN_OUT_OF_QUEST_SCROLLS !== false
@@ -385,11 +370,6 @@ function validateConstants() {
       );
       valid = false;
     }
-  }
-
-  if (NOTIFY_ON_QUEST_END !== true && NOTIFY_ON_QUEST_END !== false) {
-    console.log("ERROR: NOTIFY_ON_QUEST_END must equal either true or false.\n\neg. const NOTIFY_ON_QUEST_END = true;\n    const NOTIFY_ON_QUEST_END = false;");
-    valid = false;
   }
 
   if (AUTO_CAST_SKILLS !== true && AUTO_CAST_SKILLS !== false) {
@@ -487,28 +467,6 @@ function validateConstants() {
 
     if (ONLY_USE_DROP_FOOD !== true && ONLY_USE_DROP_FOOD !== false) {
       console.log("ERROR: ONLY_USE_DROP_FOOD must equal either true or false.\n\neg. const ONLY_USE_DROP_FOOD = true;\n    const ONLY_USE_DROP_FOOD = false;");
-      valid = false;
-    }
-  }
-
-  if (AUTO_PARTY_REPORT !== true && AUTO_PARTY_REPORT !== false) {
-    console.log("ERROR: AUTO_PARTY_REPORT must equal either true or false.\n\neg. const AUTO_PARTY_REPORT = true;\n    const AUTO_PARTY_REPORT = false;");
-    valid = false;
-  }
-
-  if (AUTO_PARTY_REPORT === true) {
-    if (typeof getParty() === "undefined" || party.leader.id !== USER_ID) {
-      console.log("ERROR: AUTO_PARTY_REPORT can only be run by party leaders.");
-      valid = false;
-    }
-
-    if (typeof PARTY_REPORT_INTERVAL_DAYS !== "number" || !Number.isInteger(PARTY_REPORT_INTERVAL_DAYS) || PARTY_REPORT_INTERVAL_DAYS < 1) {
-      console.log("ERROR: PARTY_REPORT_INTERVAL_DAYS must be a whole number greater than 0.\n\neg. const PARTY_REPORT_INTERVAL_DAYS = 7;\n    const PARTY_REPORT_INTERVAL_DAYS = 14;");
-      valid = false;
-    }
-
-    if (typeof PARTY_REPORT_QUEST_COUNT !== "number" || !Number.isInteger(PARTY_REPORT_QUEST_COUNT) || PARTY_REPORT_QUEST_COUNT < 1) {
-      console.log("ERROR: PARTY_REPORT_QUEST_COUNT must be a whole number greater than 0.\n\neg. const PARTY_REPORT_QUEST_COUNT = 10;\n    const PARTY_REPORT_QUEST_COUNT = 30;");
       valid = false;
     }
   }
@@ -646,7 +604,7 @@ function createWebhooks(groupChatReceived) {
     let questActivityOptions = {};
 
     // quest invited
-    if (AUTO_ACCEPT_QUEST_INVITES === true || FORCE_START_QUESTS === true || NOTIFY_ON_QUEST_END === true || AUTO_PAUSE_RESUME_DAMAGE === true) {
+    if (AUTO_ACCEPT_QUEST_INVITES === true || FORCE_START_QUESTS === true || AUTO_PAUSE_RESUME_DAMAGE === true) {
       Object.assign(questActivityOptions, {
         "questInvited": true
       });
@@ -660,7 +618,7 @@ function createWebhooks(groupChatReceived) {
     }
 
     // quest finished
-    if (AUTO_INVITE_GOLD_QUESTS === true || AUTO_INVITE_UNLOCKABLE_QUESTS === true || AUTO_INVITE_PET_QUESTS === true || AUTO_INVITE_HOURGLASS_QUESTS === true || NOTIFY_ON_QUEST_END === true || AUTO_PURCHASE_GEMS === true || AUTO_PURCHASE_ARMOIRES === true || AUTO_SELL_EGGS === true || AUTO_SELL_HATCHING_POTIONS === true || AUTO_SELL_FOOD === true || AUTO_HATCH_FEED_PETS === true) {
+    if (AUTO_INVITE_GOLD_QUESTS === true || AUTO_INVITE_UNLOCKABLE_QUESTS === true || AUTO_INVITE_PET_QUESTS === true || AUTO_INVITE_HOURGLASS_QUESTS === true || AUTO_PURCHASE_GEMS === true || AUTO_PURCHASE_ARMOIRES === true || AUTO_SELL_EGGS === true || AUTO_SELL_HATCHING_POTIONS === true || AUTO_SELL_FOOD === true || AUTO_HATCH_FEED_PETS === true) {
       Object.assign(questActivityOptions, {
         "questFinished": true
       });
