@@ -1,12 +1,10 @@
 /**
  * Casts Protective Aura until excess mana is used up.
- * Reserves mana for party healing. If beforeCron is true, dumps mana before cron.
- * 
- * @see https://habitica.fandom.com/wiki/Mana_Points#Restoring_Mana
- * @param {boolean} beforeCron - If true, ensure mana is dumped before cron resets it
+ * Reserves mana for party healing.
+ *
  * @returns {void}
  */
-function castProtectiveAura(beforeCron) {
+function castProtectiveAura() {
 
   // if time limit or lvl < SKILL_3_LEVEL, return
   if (webhook || installing) {
@@ -22,17 +20,9 @@ function castProtectiveAura(beforeCron) {
   let int = getTotalStat("int");
   let con = getTotalStat("con");
   let healPartyMana = (Math.ceil(MAX_HP / ((con + int + BLESSING_STAT_BONUS) * BLESSING_HEAL_MULTIPLIER)) * MANA_COST_BLESSING) * HEALING_RESERVE_HOURS;
-  let reserveMessage = "Reserving " + healPartyMana + " mana for healing the party";
   let numAuras = Math.max(Math.floor((user.stats.mp - healPartyMana) / MANA_COST_PROTECTIVE_AURA), 0);
-  if (beforeCron) {
-    let maxManaAfterCron = ((int - user.stats.buffs.int + Math.min(Math.ceil(user.stats.lvl / 2), MAX_LEVEL_STAT_BONUS)) * 2 + BASE_MANA) * MANA_RETENTION_RATE;
-    if (maxManaAfterCron < healPartyMana) {
-      numAuras = Math.max(Math.ceil((user.stats.mp - maxManaAfterCron) / MANA_COST_PROTECTIVE_AURA), 0);
-      reserveMessage = "Reserving no more than " + maxManaAfterCron + " mana for after cron";
-    }
-  }
 
-  console.log(reserveMessage);
+  console.log("Reserving " + healPartyMana + " mana for healing the party");
   console.log("Casting Protective Aura " + numAuras + " time(s)");
 
   // cast protective aura

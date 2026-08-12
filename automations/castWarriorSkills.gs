@@ -1,9 +1,8 @@
 /**
  * Casts Valorous Presence until mana is used up.
- * If saveMana is true, reserves mana for after cron and boss damage.
- * 
- * @see https://habitica.fandom.com/wiki/Mana_Points#Restoring_Mana
- * @param {boolean} saveMana - If true, reserve mana for cron and Brutal Smash
+ * If saveMana is true, reserves mana to finish off an active boss with Brutal Smash.
+ *
+ * @param {boolean} saveMana - If true, reserve mana for finishing the current boss
  * @returns {void}
  */
 function castValorousPresence(saveMana) {
@@ -22,20 +21,17 @@ function castValorousPresence(saveMana) {
     let numPresences = 0;
     let numStances = 0;
     if (saveMana) {
-      let int = getTotalStat("int");
-      let maxManaAfterCron = ((int - user.stats.buffs.int + Math.min(Math.ceil(user.stats.lvl / 2), MAX_LEVEL_STAT_BONUS)) * 2 + BASE_MANA) * MANA_RETENTION_RATE;
-      let str = getTotalStat("str");
-      let bossHP = getParty(true).quest.progress.hp;
-      if (!bossHP) {
-        bossHP = DEFAULT_BOSS_HP;
+      let reserve = 0;
+      if (hasActiveBossQuest()) {
+        let str = getTotalStat("str");
+        let bossHP = getParty(true).quest.progress.hp || DEFAULT_BOSS_HP;
+        reserve = Math.max(Math.ceil((bossHP - user.party.quest.progress.up) / (BRUTAL_SMASH_BASE_DAMAGE * str / (str + BRUTAL_SMASH_STR_DIVISOR))) * MANA_COST_BRUTAL_SMASH, 0);
       }
-      let finishBossMana = Math.max(Math.ceil((bossHP - user.party.quest.progress.up) / (BRUTAL_SMASH_BASE_DAMAGE * str / (str + BRUTAL_SMASH_STR_DIVISOR))) * MANA_COST_BRUTAL_SMASH, 0);
-      let reserve = maxManaAfterCron + finishBossMana;
 
-      console.log("Reserving no more than " + maxManaAfterCron + " (maxManaAfterCron) + " + finishBossMana + " (finishBossMana) = " + reserve + " mana");
+      console.log("Reserving " + reserve + " mana (finishBossMana)");
 
-      numPresences = Math.max(Math.ceil((user.stats.mp - reserve) / MANA_COST_VALOROUS_PRESENCE), 0);
-      numStances = Math.max(Math.ceil((user.stats.mp - reserve) / MANA_COST_DEFENSIVE_STANCE), 0);
+      numPresences = Math.max(Math.floor((user.stats.mp - reserve) / MANA_COST_VALOROUS_PRESENCE), 0);
+      numStances = Math.max(Math.floor((user.stats.mp - reserve) / MANA_COST_DEFENSIVE_STANCE), 0);
     } else {
       numPresences = Math.floor(user.stats.mp / MANA_COST_VALOROUS_PRESENCE);
       numStances = Math.floor(user.stats.mp / MANA_COST_DEFENSIVE_STANCE);
@@ -73,9 +69,9 @@ function castValorousPresence(saveMana) {
 }
 
 /**
- * Casts Brutal Smash to finish boss, then dumps remaining mana on Valorous Presence.
+ * Casts Brutal Smash to finish off an active boss.
  * Run just before cron.
- * 
+ *
  * @returns {void}
  */
 function smashBossAndDumpMana() {
@@ -91,15 +87,10 @@ function smashBossAndDumpMana() {
   // if in a party
   if (typeof user.party._id !== "undefined") {
 
-    // get boss hp
-    let bossHP = getParty(true).quest.progress.hp;
-    if (!bossHP) {
-      bossHP = DEFAULT_BOSS_HP;
-    }
+    // if there's an active boss quest and user has non-challenge tasks
+    if (hasActiveBossQuest() && getTasks().length > 0) {
 
-    // if boss hp and user has non-challenge tasks
-    if (typeof bossHP !== "undefined" && getTasks().length > 0) {
-
+      let bossHP = getParty(true).quest.progress.hp || DEFAULT_BOSS_HP;
       console.log("Boss HP: " + bossHP);
       console.log("Pending damage: " + user.party.quest.progress.up);
 
@@ -143,50 +134,5 @@ function smashBossAndDumpMana() {
     // if not in a party
   } else {
     console.log("Player not in a party, cannot cast Brutal Smash");
-  }
-
-  // if no time limit & lvl >= SKILL_2_LEVEL
-  if (!webhook && !installing && user.stats.lvl >= SKILL_2_LEVEL) {
-
-    // check for perfect day
-    let perfectDayBuff = calculatePerfectDayBuff();
-
-    // calculate number of valorous presences to cast
-    let int = getTotalStat("int");
-    let maxManaAfterCron = ((int - user.stats.buffs.int + perfectDayBuff) * 2 + BASE_MANA) * MANA_RETENTION_RATE;
-
-    console.log("Reserving no more than " + maxManaAfterCron + " (maxManaAfterCron) mana");
-
-    let numPresences = Math.max(Math.ceil((user.stats.mp - maxManaAfterCron) / MANA_COST_VALOROUS_PRESENCE), 0);
-    let numStances = Math.max(Math.ceil((user.stats.mp - maxManaAfterCron) / MANA_COST_DEFENSIVE_STANCE), 0);
-
-    // if lvl >= SKILL_3_LEVEL, cast valorous presences
-    if (user.stats.lvl >= SKILL_3_LEVEL) {
-
-      console.log("Casting Valorous Presence " + numPresences + " time(s)");
-
-      for (let i = 0; i < numPresences; i++) {
-        fetch("https://habitica.com/api/v3/user/class/cast/valorousPresence", POST_PARAMS);
-        if (interruptLoop()) {
-          break;
-        }
-      }
-    
-      // if lvl SKILL_2_LEVEL, cast defensive stances
-    } else {
-
-      console.log("Player level " + user.stats.lvl + ", casting Defensive Stance " + numStances + " time(s)");
-
-      for (let i = 0; i < numStances; i++) {
-        fetch("https://habitica.com/api/v3/user/class/cast/defensiveStance", POST_PARAMS);
-        if (interruptLoop()) {
-          break;
-        }
-      }
-    }
-
-    // if lvl < SKILL_2_LEVEL
-  } else if (user.stats.lvl < SKILL_2_LEVEL) {
-    console.log("Player level " + user.stats.lvl + ", cannot cast buffs");
   }
 }

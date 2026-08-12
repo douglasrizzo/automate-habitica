@@ -585,9 +585,12 @@ function interruptLoop() {
 }
 
 /**
- * Attacks the boss and uses up mana that will be lost at cron.
+ * Casts skills whose effect must land before cron: boss damage (persists regardless of
+ * timing) and Stealth/Chilling Frost (must be active when cron computes that day's
+ * damage/streaks). Does not cast class stat buffs here since those reset to 0 at every
+ * cron regardless of when during the day they were cast.
  * Run just before day start, at least 6 mins before (max GAS run time).
- * 
+ *
  * @param {boolean} [retry] - Whether this is a retry attempt after skill not found error
  * @returns {void}
  */
@@ -598,8 +601,6 @@ function beforeCronSkills(retry) {
       smashBossAndDumpMana();
     } else if (playerClass == "wizard") {
       burnBossAndDumpMana();
-    } else if (playerClass == "healer") {
-      castProtectiveAura(true);
     } else if (playerClass == "rogue") {
       castStealthAndDumpMana();
     }
@@ -628,7 +629,7 @@ function afterCronSkills(retry) {
     } else if (playerClass == "wizard") {
       castEarthquake(false);
     } else if (playerClass == "healer") {
-      castProtectiveAura(false);
+      castProtectiveAura();
     } else if (playerClass == "rogue") {
       castToolsOfTheTrade(false);
     }
@@ -658,7 +659,7 @@ function useExcessMana(retry) {
     } else if (playerClass == "wizard") {
       castEarthquake(true);
     } else if (playerClass == "healer") {
-      castProtectiveAura(false);
+      castProtectiveAura();
     } else if (playerClass == "rogue") {
       castToolsOfTheTrade(true);
     }
@@ -813,6 +814,18 @@ function calculatePerfectDayBuff() {
     }
   }
   return Math.min(Math.ceil(getUser().stats.lvl / 2), MAX_LEVEL_STAT_BONUS);
+}
+
+/**
+ * Checks whether the party is currently on an active boss quest.
+ * Distinguishes a real boss fight from no quest or a non-boss (e.g. collection) quest,
+ * so boss-damage reserves and casts don't fire against a nonexistent boss.
+ *
+ * @returns {boolean} True if there's an active quest with boss-defeat mechanics
+ */
+function hasActiveBossQuest() {
+  let questKey = user.party.quest.key;
+  return typeof questKey !== "undefined" && typeof getContent().quests[questKey].boss !== "undefined";
 }
 
 /**

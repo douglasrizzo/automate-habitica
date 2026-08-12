@@ -1,9 +1,8 @@
 /**
  * Casts Earthquake until mana is used up.
- * If saveMana is true, reserves mana for cron, Chilling Frost, and Burst of Flames.
- * 
- * @see https://habitica.fandom.com/wiki/Mana_Points#Restoring_Mana
- * @param {boolean} saveMana - If true, reserve mana for cron and other skills
+ * If saveMana is true, reserves mana for Chilling Frost and finishing an active boss.
+ *
+ * @param {boolean} saveMana - If true, reserve mana for Chilling Frost and boss damage
  * @returns {void}
  */
 function castEarthquake(saveMana) {
@@ -23,19 +22,18 @@ function castEarthquake(saveMana) {
   let numSurges = 0;
   if (saveMana) {
     let int = getTotalStat("int");
-    let maxManaAfterCron = ((int - user.stats.buffs.int + Math.min(Math.ceil(user.stats.lvl / 2), MAX_LEVEL_STAT_BONUS)) * 2 + BASE_MANA) * MANA_RETENTION_RATE;
     let chillingFrostMana = user.stats.lvl >= SKILL_4_LEVEL && calculatePerfectDayBuff() === 0 ? MANA_COST_CHILLING_FROST : 0;
-    let bossHP = getParty(true).quest.progress.hp;
-    if (!bossHP) {
-      bossHP = DEFAULT_BOSS_HP;
+    let finishBossMana = 0;
+    if (hasActiveBossQuest()) {
+      let bossHP = getParty(true).quest.progress.hp || DEFAULT_BOSS_HP;
+      finishBossMana = Math.max(Math.ceil((bossHP - user.party.quest.progress.up) / Math.ceil(int / BURST_OF_FLAMES_INT_DIVISOR)) * MANA_COST_BURST_OF_FLAMES, 0);
     }
-    let finishBossMana = Math.max(Math.ceil((bossHP - user.party.quest.progress.up) / Math.ceil(int / BURST_OF_FLAMES_INT_DIVISOR)) * MANA_COST_BURST_OF_FLAMES, 0);
-    let reserve = maxManaAfterCron + chillingFrostMana + finishBossMana;
+    let reserve = chillingFrostMana + finishBossMana;
 
-    console.log("Reserving no more than " + maxManaAfterCron + " (maxManaAfterCron) + " + chillingFrostMana + " (chillingFrostMana) + " + finishBossMana + " (finishBossMana) = " + reserve + " mana");
+    console.log("Reserving " + chillingFrostMana + " (chillingFrostMana) + " + finishBossMana + " (finishBossMana) = " + reserve + " mana");
 
-    numEarthquakes = Math.max(Math.ceil((user.stats.mp - reserve) / MANA_COST_EARTHQUAKE), 0);
-    numSurges = Math.max(Math.ceil((user.stats.mp - reserve) / MANA_COST_ETHEREAL_SURGE), 0);
+    numEarthquakes = Math.max(Math.floor((user.stats.mp - reserve) / MANA_COST_EARTHQUAKE), 0);
+    numSurges = Math.max(Math.floor((user.stats.mp - reserve) / MANA_COST_ETHEREAL_SURGE), 0);
   } else {
     numEarthquakes = Math.floor(user.stats.mp / MANA_COST_EARTHQUAKE);
     numSurges = Math.floor(user.stats.mp / MANA_COST_ETHEREAL_SURGE);
@@ -68,9 +66,12 @@ function castEarthquake(saveMana) {
 }
 
 /**
- * Casts Chilling Frost, Burst of Flames to finish boss, then dumps remaining mana.
+ * Casts Chilling Frost, Burst of Flames to finish an active boss, then Ethereal Surge
+ * with whatever mana is left over (if in a party of more than one). Doesn't cast
+ * Earthquake here since it's a self-buff that would be wiped by cron seconds later;
+ * that mana is left for afterCronSkills() to spend once it'll last the full day.
  * Run just before cron.
- * 
+ *
  * @returns {void}
  */
 function burnBossAndDumpMana() {
@@ -98,15 +99,10 @@ function burnBossAndDumpMana() {
   // if in a party
   if (typeof user.party._id !== "undefined") {
 
-    // get boss hp
-    let bossHP = getParty(true).quest.progress.hp;
-    if (!bossHP) {
-      bossHP = DEFAULT_BOSS_HP;
-    }
+    // if there's an active boss quest and user has non-challenge tasks
+    if (hasActiveBossQuest() && getTasks().length > 0) {
 
-    // if boss hp and user has non-challenge tasks
-    if (typeof bossHP !== "undefined" && getTasks().length > 0) {
-
+      let bossHP = getParty(true).quest.progress.hp || DEFAULT_BOSS_HP;
       console.log("Boss HP: " + bossHP);
       console.log("Pending damage: " + user.party.quest.progress.up);
 
@@ -146,51 +142,23 @@ function burnBossAndDumpMana() {
     // if no time limit & lvl >= SKILL_2_LEVEL & party has other players
     if (!webhook && !installing && user.stats.lvl >= SKILL_2_LEVEL && getParty().memberCount > 1) {
 
-        // calculate number of ethereal surges to cast
-      let maxManaAfterCron = ((int - user.stats.buffs.int + perfectDayBuff) * 2 + BASE_MANA) * MANA_RETENTION_RATE;
+      // Ethereal Surge isn't a self-buff (grants MP to party members) so it isn't
+      // wiped at cron - spend whatever's left after Chilling Frost/Burst of Flames
+      let numSurges = Math.max(Math.floor(user.stats.mp / MANA_COST_ETHEREAL_SURGE), 0);
 
-        console.log("Reserving no more than " + maxManaAfterCron + " (maxManaAfterCron) mana");
+      console.log("Casting Ethereal Surge " + numSurges + " time(s)");
 
-      let numSurges = Math.max(Math.ceil((user.stats.mp - maxManaAfterCron) / MANA_COST_ETHEREAL_SURGE), 0);
-
-        console.log("Casting Ethereal Surge " + numSurges + " time(s)");
-
-        // cast ethereal surge
+      // cast ethereal surge
       for (let i = 0; i < numSurges; i++) {
-          fetch("https://habitica.com/api/v3/user/class/cast/mpheal", POST_PARAMS);
-          if (interruptLoop()) {
-            break;
-          }
+        fetch("https://habitica.com/api/v3/user/class/cast/mpheal", POST_PARAMS);
+        if (interruptLoop()) {
+          break;
         }
+      }
 
       // if lvl < SKILL_2_LEVEL, cannot cast ethereal surge
     } else if (user.stats.lvl < SKILL_2_LEVEL) {
       console.log("Player level " + user.stats.lvl + ", cannot cast Ethereal Surge");
     }
-  }
-
-  // not in a party with other players & no time limit & lvl >= SKILL_3_LEVEL
-  if ((typeof getParty() === "undefined" || getParty().memberCount <= 1) && !webhook && !installing && user.stats.lvl >= SKILL_3_LEVEL) {
-
-    // calculate number of earthquakes to cast
-    let maxManaAfterCron = ((int - user.stats.buffs.int + perfectDayBuff) * 2 + BASE_MANA) * MANA_RETENTION_RATE;
-
-    console.log("Reserving no more than " + maxManaAfterCron + " (maxManaAfterCron) mana");
-
-    let numEarthquakes = Math.max(Math.ceil((user.stats.mp - maxManaAfterCron) / MANA_COST_EARTHQUAKE), 0);
-
-    console.log("Casting Earthquake " + numEarthquakes + " time(s)");
-
-    // cast earthquake
-    for (let i = 0; i < numEarthquakes; i++) {
-      fetch("https://habitica.com/api/v3/user/class/cast/earth", POST_PARAMS);
-      if (interruptLoop()) {
-        break;
-      }
-    }
-
-    // if lvl < SKILL_3_LEVEL, cannot cast earthquake
-  } else if (user.stats.lvl < SKILL_3_LEVEL) {
-    console.log("Player level " + user.stats.lvl + ", cannot cast Earthquake");
   }
 }

@@ -45,9 +45,6 @@ const GOLD_PER_GEM = 20;
 /** Gold cost to purchase one Enchanted Armoire. @see https://habitica.fandom.com/wiki/Enchanted_Armoire */
 const ARMOIRE_COST = 100;
 
-/** Mana percentage retained after cron (90%). @see https://habitica.fandom.com/wiki/Mana_Points#Restoring_Mana */
-const MANA_RETENTION_RATE = 0.9;
-
 /** GAS script execution timeout threshold in ms (4.5 minutes to leave buffer before 6 min limit) */
 const SCRIPT_TIMEOUT_MS = 270000;
 

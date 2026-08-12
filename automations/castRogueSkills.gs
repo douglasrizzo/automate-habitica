@@ -1,13 +1,16 @@
 /**
  * Casts Tools of the Trade until mana is used up.
- * If saveMana is true, reserves mana for after cron and Stealth casts.
- * 
- * @see https://habitica.fandom.com/wiki/Mana_Points#Restoring_Mana
- * @param {boolean} saveMana - If true, reserve mana for cron and Stealth
+ * If saveMana is true, reserves mana for Stealth casts still pending this run.
+ * If beforeCron is true, skips Tools of the Trade specifically (a buff that would be
+ * wiped by cron seconds later) while still allowing Backstab/Pickpocket, whose effects
+ * persist through cron.
+ *
+ * @param {boolean} saveMana - If true, reserve mana for pending Stealth casts
  * @param {number} [stealthsNeeded] - Number of Stealth casts needed (calculated if not provided)
+ * @param {boolean} [beforeCron] - If true, don't cast Tools of the Trade (would be wiped by cron)
  * @returns {void}
  */
-function castToolsOfTheTrade(saveMana, stealthsNeeded) {
+function castToolsOfTheTrade(saveMana, stealthsNeeded, beforeCron) {
 
   // if time limit or lvl < SKILL_1_LEVEL, return
   if (webhook || installing) {
@@ -30,19 +33,14 @@ function castToolsOfTheTrade(saveMana, stealthsNeeded) {
     if (typeof stealthsNeeded === "undefined") {
       stealthsNeeded = numStealthsNeeded();
     }
-    let stealthMana = stealthsNeeded * MANA_COST_STEALTH;
+    let reserve = stealthsNeeded * MANA_COST_STEALTH;
 
-    // calculate mana reserve
-    let int = getTotalStat("int");
-    let maxManaAfterCron = ((int - user.stats.buffs.int + Math.min(Math.ceil(user.stats.lvl / 2), MAX_LEVEL_STAT_BONUS)) * 2 + BASE_MANA) * MANA_RETENTION_RATE;
-    let reserve = maxManaAfterCron + stealthMana;
-
-    console.log("Reserving no more than " + maxManaAfterCron + " (maxManaAfterCron) + " + stealthMana + " (stealthMana) = " + reserve + " mana");
+    console.log("Reserving " + reserve + " mana for pending Stealth casts");
 
     // calculate number of casts
-    numTools = Math.max(Math.ceil((user.stats.mp - reserve) / MANA_COST_TOOLS_OF_TRADE), 0);
-    numBackstabs = Math.max(Math.ceil((user.stats.mp - reserve) / MANA_COST_BACKSTAB), 0);
-    numPickpockets = Math.max(Math.ceil((user.stats.mp - reserve) / MANA_COST_PICKPOCKET), 0);
+    numTools = Math.max(Math.floor((user.stats.mp - reserve) / MANA_COST_TOOLS_OF_TRADE), 0);
+    numBackstabs = Math.max(Math.floor((user.stats.mp - reserve) / MANA_COST_BACKSTAB), 0);
+    numPickpockets = Math.max(Math.floor((user.stats.mp - reserve) / MANA_COST_PICKPOCKET), 0);
   } else {
     numTools = Math.floor(user.stats.mp / MANA_COST_TOOLS_OF_TRADE);
     numBackstabs = Math.floor(user.stats.mp / MANA_COST_BACKSTAB);
@@ -51,6 +49,11 @@ function castToolsOfTheTrade(saveMana, stealthsNeeded) {
 
   // if lvl >= SKILL_3_LEVEL, cast tools of the trade
   if (user.stats.lvl >= SKILL_3_LEVEL) {
+
+    if (beforeCron) {
+      console.log("Skipping Tools of the Trade before cron, buff would be wiped immediately after");
+      numTools = 0;
+    }
 
     console.log("Casting Tools of the Trade " + numTools + " time(s)");
 
@@ -169,7 +172,7 @@ function castStealthAndDumpMana() {
   }
 
   // cast tools of the trades
-  castToolsOfTheTrade(true, stealthsNeeded);
+  castToolsOfTheTrade(true, stealthsNeeded, true);
 }
 
 /**
