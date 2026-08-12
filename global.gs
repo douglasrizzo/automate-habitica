@@ -644,7 +644,8 @@ function afterCronSkills(retry) {
 
 /**
  * Uses excess mana to cast buffs.
- * Reserves mana that will remain after cron, plus enough for 3000 boss damage.
+ * Reserves mana that will remain after cron, plus enough to finish the current
+ * boss (falls back to 3000 HP if no boss data is available).
  * 
  * @param {boolean} [retry] - Whether this is a retry attempt after skill not found error
  * @returns {void}
@@ -1175,13 +1176,13 @@ function getQuestCompletionData() {
 
   for (let quest of Object.values(content.quests)) {
     // if world boss, skip it
-    if (quest.category == "world" || typeof quest.drop.items === "undefined") {
+    if (quest.category == "world") {
       continue;
     }
 
     // get rewards
     let rewards = [];
-    for (let drop of quest.drop.items) {
+    for (let drop of quest.drop.items || []) {
       let rewardName = drop.text;
       let rewardType = "";
 

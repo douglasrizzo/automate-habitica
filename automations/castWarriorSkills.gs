@@ -25,7 +25,11 @@ function castValorousPresence(saveMana) {
       let int = getTotalStat("int");
       let maxManaAfterCron = ((int - user.stats.buffs.int + Math.min(Math.ceil(user.stats.lvl / 2), MAX_LEVEL_STAT_BONUS)) * 2 + BASE_MANA) * MANA_RETENTION_RATE;
       let str = getTotalStat("str");
-      let finishBossMana = Math.max(Math.ceil((DEFAULT_BOSS_HP - user.party.quest.progress.up) / (BRUTAL_SMASH_BASE_DAMAGE * str / (str + BRUTAL_SMASH_STR_DIVISOR))) * MANA_COST_BRUTAL_SMASH, 0);
+      let bossHP = getParty(true).quest.progress.hp;
+      if (!bossHP) {
+        bossHP = DEFAULT_BOSS_HP;
+      }
+      let finishBossMana = Math.max(Math.ceil((bossHP - user.party.quest.progress.up) / (BRUTAL_SMASH_BASE_DAMAGE * str / (str + BRUTAL_SMASH_STR_DIVISOR))) * MANA_COST_BRUTAL_SMASH, 0);
       let reserve = maxManaAfterCron + finishBossMana;
 
       console.log("Reserving no more than " + maxManaAfterCron + " (maxManaAfterCron) + " + finishBossMana + " (finishBossMana) = " + reserve + " mana");

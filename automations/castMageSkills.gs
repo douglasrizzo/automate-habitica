@@ -25,7 +25,11 @@ function castEarthquake(saveMana) {
     let int = getTotalStat("int");
     let maxManaAfterCron = ((int - user.stats.buffs.int + Math.min(Math.ceil(user.stats.lvl / 2), MAX_LEVEL_STAT_BONUS)) * 2 + BASE_MANA) * MANA_RETENTION_RATE;
     let chillingFrostMana = user.stats.lvl >= SKILL_4_LEVEL && calculatePerfectDayBuff() === 0 ? MANA_COST_CHILLING_FROST : 0;
-    let finishBossMana = Math.max(Math.ceil((DEFAULT_BOSS_HP - user.party.quest.progress.up) / Math.ceil(int / BURST_OF_FLAMES_INT_DIVISOR)) * MANA_COST_BURST_OF_FLAMES, 0);
+    let bossHP = getParty(true).quest.progress.hp;
+    if (!bossHP) {
+      bossHP = DEFAULT_BOSS_HP;
+    }
+    let finishBossMana = Math.max(Math.ceil((bossHP - user.party.quest.progress.up) / Math.ceil(int / BURST_OF_FLAMES_INT_DIVISOR)) * MANA_COST_BURST_OF_FLAMES, 0);
     let reserve = maxManaAfterCron + chillingFrostMana + finishBossMana;
 
     console.log("Reserving no more than " + maxManaAfterCron + " (maxManaAfterCron) + " + chillingFrostMana + " (chillingFrostMana) + " + finishBossMana + " (finishBossMana) = " + reserve + " mana");
