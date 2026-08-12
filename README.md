@@ -83,14 +83,14 @@ Priority selection systematically completes quests that fewer members have finis
 
 ### Auto Cast Skills
 
-Strategically casts your [skills](https://habitica.fandom.com/wiki/Skills) for you. Ensures no [mana](https://habitica.fandom.com/wiki/Mana_Points) is wasted, and no mana is lost at [cron](https://habitica.fandom.com/wiki/Cron). In order from highest to lowest priority:
+Strategically casts your [skills](https://habitica.fandom.com/wiki/Skills) for you, so [mana](https://habitica.fandom.com/wiki/Mana_Points) goes toward buffs and boss damage instead of sitting unused. In order from highest to lowest priority:
 
 1. Heals you and your [party](https://habitica.fandom.com/wiki/Party) as needed ([healer](https://habitica.fandom.com/wiki/Healer))
-2. Casts Stealth to hide you from any [missed dailies](https://habitica.fandom.com/wiki/Dailies#Uncompleted_Dailies) just before your [day start time](https://habitica.fandom.com/wiki/Custom_Day_Start) ([rogue](https://habitica.fandom.com/wiki/Rogue))
+2. Casts Stealth to hide you from any [missed dailies](https://habitica.fandom.com/wiki/Dailies#Uncompleted_Dailies) just before your [day start time](https://habitica.fandom.com/wiki/Custom_Day_Start) ([rogue](https://habitica.fandom.com/wiki/Rogue)), then spends any leftover mana on Backstab or Pickpocket if not yet high enough level for Tools of the Trade
 3. Freezes your [streaks](https://habitica.fandom.com/wiki/Streaks) with Chilling Frost just before your day start time ([mage](https://habitica.fandom.com/wiki/Mage))
-4. Defeats [bosses](https://habitica.fandom.com/wiki/Boss) with Burst of Flames (mage) or Brutal Smash ([warrior](https://habitica.fandom.com/wiki/Warrior)) just before your day start time
-5. Reserves enough mana to start each day with as much mana as possible, then uses all your mana to buff your [class](https://habitica.fandom.com/wiki/Class_System)'s primary [stat](https://habitica.fandom.com/wiki/Character_Stats) just after cron
-6. Buffs your class's primary stat whenever extra mana is available (reserves mana for the items listed above); mages will cast Ethereal Surge instead of buffs if they are about to cron
+4. Defeats [bosses](https://habitica.fandom.com/wiki/Boss) with Burst of Flames (mage) or Brutal Smash ([warrior](https://habitica.fandom.com/wiki/Warrior)) just before your day start time, but only while your party is actually fighting one
+5. Buffs your [class](https://habitica.fandom.com/wiki/Class_System)'s primary [stat](https://habitica.fandom.com/wiki/Character_Stats) with your full mana pool right after [cron](https://habitica.fandom.com/wiki/Cron) — buffs reset at cron no matter how long they've been active, so casting them beforehand would waste almost all of their duration
+6. Buffs your class's primary stat whenever extra mana is available afterward (reserving mana for the items listed above); mages will also cast Ethereal Surge to restore party mana, since unlike buffs it isn't wiped at cron
 
 ### Auto Pause/Resume Damage
 

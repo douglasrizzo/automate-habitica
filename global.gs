@@ -645,9 +645,8 @@ function afterCronSkills(retry) {
 
 /**
  * Uses excess mana to cast buffs.
- * Reserves mana that will remain after cron, plus enough to finish the current
- * boss (falls back to 3000 HP if no boss data is available).
- * 
+ * Reserves mana to finish the current boss, if a boss quest is actually active.
+ *
  * @param {boolean} [retry] - Whether this is a retry attempt after skill not found error
  * @returns {void}
  */
