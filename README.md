@@ -25,7 +25,7 @@ Forces pending [quests](https://habitica.fandom.com/wiki/Quests) to start after 
 
 ### Auto Invite Quests
 
-Whenever your party completes a quest, automatically selects a quest scroll from your inventory and invites your party to that quest. There is a delay of up to 10 mins between quest ending and using the quest scroll, to give other party members a chance to run their quests too, and to prevent multiple simultaneous quest invitations. If `AUTO_INVITE_HOURGLASS_QUESTS` is set to `false`, the script will not use _any_ hourglass quest scrolls, even if they match the other quest categories.
+Whenever your party completes a quest, automatically selects a quest scroll from your inventory and invites your party to that quest. There is a short delay between quest ending and sending the invite, to give other party members a chance to send their own invite first if they hold a more urgent scroll — see [Quest Selection And Invite Delay](#quest-selection-and-invite-delay) below for exactly how that's calculated. If `AUTO_INVITE_HOURGLASS_QUESTS` is set to `false`, the script will not use _any_ hourglass quest scrolls, even if they match the other quest categories.
 
 You can configure which quest categories to auto-invite using these settings:
 
@@ -261,6 +261,15 @@ It is highly recommended that you use a desktop computer for this, as some of th
 > [!CAUTION]
 > Only install one copy of Automate Habitica per Google account, otherwise you will exceed the [limit for URL Fetch calls](https://developers.google.com/apps-script/guides/services/quotas) and the script will not work.
 
+### Which version should I copy?
+
+There are two Automate Habitica+ script projects to choose from:
+
+- **[Stable](https://script.google.com/home/projects/14GDS_AQCgXyNK0-VEJlfhvIMI-h4GpnDnYm_3GNUxzOb-LG63NhhWtHi/)** — matches the latest [GitHub release](https://github.com/douglasrizzo/automate-habitica/releases). Recommended for most users.
+- **[Dev](https://script.google.com/home/projects/1sipdo-zWZ_rymPSIZFWBCgf-U-_zEEyQwHBB9IUeSHCxpPTJHqnCLOIl/)** — matches the `main` branch on GitHub, updated more frequently. May include fixes and features not in a release yet, but has seen less real-world testing. If something breaks, you can always follow [Updating the Script](#updating-the-script) to switch back to Stable.
+
+The steps below use the Stable link; substitute the Dev link in step 1 if you'd rather use that version.
+
 1. Click [here](https://script.google.com/home/projects/14GDS_AQCgXyNK0-VEJlfhvIMI-h4GpnDnYm_3GNUxzOb-LG63NhhWtHi/) to go to the Automate Habitica script. If you're not signed into your Google account, click on "Start Scripting", then sign in, then click on the script link again.
 2. Click the "Make a copy" button (looks like two pages of paper).
 3. At the top of your screen, click on "Copy of Automate Habitica+". Rename it "Automate Habitica+" and click the "Rename" button.
@@ -268,8 +277,12 @@ It is highly recommended that you use a desktop computer for this, as some of th
 5. On the same page where you copied your User ID, click the "Show API Token" button, and copy your API Token. In the Automate Habitica+ script, paste your API Token between the quotations where it says `const API_TOKEN = "";`. It should now look something like this: `const API_TOKEN = "c4de46a5-e9ba-4d8c-a28f-7f5a3d3d218b";`
 6. Skip the line that says `const WEB_APP_URL = "";`. We will come back to that later. Edit all the other settings (`const`s) in the script to your liking. Only edit in between the `=` and the `;`. If there are quotations `""` in between the `=` and the `;`, just type in between the quotations.
 7. Click the "Save project" button near the top of the page (looks like a floppy disk).
-8. Click the blue "Deploy" button near the top of the page, then click "New deployment", then click the "Deploy" button.
-9. (If this is your first time deploying) Click the "Review permissions" button and select your Google account. Click on "Advanced", then "Go to Automate Habitica+ (unsafe)", then click "Continue", then "Allow".
+8. Click the blue "Deploy" button near the top of the page, then click "New deployment".
+
+> [!WARNING]
+> Before clicking "Deploy" in the dialog that opens, check the "Who has access" dropdown and make sure it's set to **`Anyone`** (not `Only myself`). Habitica's servers call your script from outside your Google account, so if this is left on `Only myself`, Habitica will silently fail to reach it — none of the webhook-driven automations (quest invites, quest completion, task-scored reactions, etc.) will work, even though everything else looks correctly installed.
+
+9. Click the "Deploy" button. (If this is your first time deploying) Click the "Review permissions" button and select your Google account. Click on "Advanced", then "Go to Automate Habitica+ (unsafe)", then click "Continue", then "Allow".
 
 > [!TIP]
 > The "(unsafe)" warning appears because Google hasn't verified this script. It's safe to proceed—the script only communicates with Habitica's API.
