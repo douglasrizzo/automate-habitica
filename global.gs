@@ -198,6 +198,10 @@ function processTrigger() {
   if (AUTO_PURCHASE_ARMOIRES === true) {
     scriptProperties.setProperty("purchaseArmoires", "true");
   }
+
+  if (AUTO_QUEST_REPORT === true) {
+    scriptProperties.setProperty("sendQuestReport", "true");
+  }
 }
 
 /**
@@ -529,6 +533,11 @@ function processQueue() {
           scriptProperties.deleteProperty("purchaseArmoires");
           continue;
         }
+        if (properties.hasOwnProperty("sendQuestReport") && !webhook && !installing) {
+          sendQuestReport();
+          scriptProperties.deleteProperty("sendQuestReport");
+          continue;
+        }
         break;
       }
 
@@ -825,8 +834,8 @@ function calculatePerfectDayBuff() {
  * @returns {boolean} True if there's an active quest with boss-defeat mechanics
  */
 function hasActiveBossQuest() {
-  let questKey = user.party.quest.key;
-  return typeof questKey !== "undefined" && typeof getContent().quests[questKey].boss !== "undefined";
+  let quest = user.party.quest;
+  return !!quest.active && !!quest.key && typeof getContent().quests[quest.key].boss !== "undefined";
 }
 
 /**

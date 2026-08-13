@@ -79,6 +79,10 @@ Priority selection systematically completes quests that fewer members have finis
 
 </details>
 
+### Quest Report
+
+Sends yourself a [private message](https://habitica.fandom.com/wiki/Private_Messaging) every `QUEST_REPORT_FREQUENCY_DAYS` days (default `7`) listing the `QUEST_REPORT_COUNT` quests with the lowest [completion percentage](#quest-completion-percentage), a random sample of up to `MAX_SCROLL_OWNERS_DISPLAY` party members who own a scroll for each, and — if any `AUTO_INVITE_*` setting is enabled — which quest would currently be picked next by [Auto Invite Quests](#auto-invite-quests). Off by default; enable with `AUTO_QUEST_REPORT = true`.
+
 ### Auto Cast Skills
 
 Strategically casts your [skills](https://habitica.fandom.com/wiki/Skills) for you, so [mana](https://habitica.fandom.com/wiki/Mana_Points) goes toward buffs and boss damage instead of sitting unused. In order from highest to lowest priority:

@@ -27,6 +27,9 @@ const AUTO_INVITE_HOURGLASS_QUESTS = false;
 const AUTO_INVITE_FULLY_COMPLETED_QUESTS = true;
 const PM_WHEN_OUT_OF_QUEST_SCROLLS = true;
 
+const AUTO_QUEST_REPORT = false; // send yourself a periodic PM with quest completion data & who has scrolls to invite
+const QUEST_REPORT_FREQUENCY_DAYS = 7; // how often to send the quest report (in days)
+
 const AUTO_CAST_SKILLS = false;
 
 const AUTO_PAUSE_RESUME_DAMAGE = true;
@@ -370,6 +373,21 @@ function validateConstants() {
       );
       valid = false;
     }
+  }
+
+  if (AUTO_QUEST_REPORT !== true && AUTO_QUEST_REPORT !== false) {
+    console.log("ERROR: AUTO_QUEST_REPORT must equal either true or false.\n\neg. const AUTO_QUEST_REPORT = true;\n    const AUTO_QUEST_REPORT = false;");
+    valid = false;
+  }
+
+  if (
+    AUTO_QUEST_REPORT === true &&
+    (typeof QUEST_REPORT_FREQUENCY_DAYS !== "number" ||
+      !Number.isInteger(QUEST_REPORT_FREQUENCY_DAYS) ||
+      QUEST_REPORT_FREQUENCY_DAYS < 1)
+  ) {
+    console.log("ERROR: QUEST_REPORT_FREQUENCY_DAYS must be a whole number greater than 0.\n\neg. const QUEST_REPORT_FREQUENCY_DAYS = 7;\n    const QUEST_REPORT_FREQUENCY_DAYS = 14;");
+    valid = false;
   }
 
   if (AUTO_CAST_SKILLS !== true && AUTO_CAST_SKILLS !== false) {

@@ -69,6 +69,15 @@ const QUEST_INVITE_BASE_DELAY_MS = 10000;
 /** Additional delay added per rival party member (one who owns an eligible scroll for a strictly more urgent quest) in ms (15 seconds) */
 const QUEST_INVITE_RIVAL_INCREMENT_MS = 15000;
 
+/** Number of quests to list in the quest report (lowest completion % first) */
+const QUEST_REPORT_COUNT = 10;
+
+/** Maximum number of random scroll owners to display per quest in the quest report */
+const MAX_SCROLL_OWNERS_DISPLAY = 3;
+
+/** Emoji options for random selection in the quest report header */
+const REPORT_EMOJIS = ["🎯", "⚔️", "🗡️", "🐉", "🏰", "🧙", "🦄", "🔮", "✨", "🌟", "💎", "🏆", "📜", "🎲", "🧭"];
+
 /** Number of eggs needed per species to have all basic color pets/mounts. @see https://habitica.fandom.com/wiki/Pets */
 const EGGS_FOR_COMPLETE_SPECIES = 20;
 
