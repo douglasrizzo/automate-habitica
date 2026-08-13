@@ -63,11 +63,11 @@ const HTTP_SUCCESS_MAX = 300;
 /** HTTP status code threshold for server errors */
 const HTTP_SERVER_ERROR_MIN = 500;
 
-/** Minimum delay before quest invite trigger in ms (3 minutes) */
-const QUEST_INVITE_MIN_DELAY_MS = 180000;
+/** Base delay before the quest invite trigger fires, before rival party members are factored in, in ms (10 seconds) */
+const QUEST_INVITE_BASE_DELAY_MS = 10000;
 
-/** Maximum additional delay for quest invite trigger in ms (7 minutes, total max = 10 minutes) */
-const QUEST_INVITE_MAX_DELAY_MS = 420000;
+/** Additional delay added per rival party member (one who owns an eligible scroll for a strictly more urgent quest) in ms (15 seconds) */
+const QUEST_INVITE_RIVAL_INCREMENT_MS = 15000;
 
 /** Number of eggs needed per species to have all basic color pets/mounts. @see https://habitica.fandom.com/wiki/Pets */
 const EGGS_FOR_COMPLETE_SPECIES = 20;

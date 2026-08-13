@@ -345,15 +345,17 @@ function processWebhook(webhookData) {
       let selectedQuest = selectPriorityQuest();
       let afterMs;
       if (selectedQuest !== null) {
-        console.log("Quest scroll with lowest completion: " + selectedQuest.questName + " (" + selectedQuest.completionPercentage.toFixed(2) + "%)");
-        if (selectedQuest.completionPercentage < 25) {
-          afterMs = 1;
-        } else {
-          afterMs = (selectedQuest.completionPercentage / 100) * QUEST_INVITE_MAX_DELAY_MS + QUEST_INVITE_MIN_DELAY_MS;
-        }
+        console.log(
+          "Quest scroll with lowest completion: " + selectedQuest.questName +
+          " (" + selectedQuest.completionPercentage.toFixed(2) + "%, " +
+          selectedQuest.rivals + " rival" + (selectedQuest.rivals === 1 ? "" : "s") + ")"
+        );
+        afterMs = QUEST_INVITE_BASE_DELAY_MS + QUEST_INVITE_RIVAL_INCREMENT_MS * selectedQuest.rivals;
       } else {
         console.log("No priority quest found");
-        afterMs = QUEST_INVITE_MIN_DELAY_MS + QUEST_INVITE_MAX_DELAY_MS;
+        let partyMembers = getMembers(); // already cached, no extra fetch
+        let partySize = Array.isArray(partyMembers) ? partyMembers.length : 1;
+        afterMs = QUEST_INVITE_BASE_DELAY_MS + QUEST_INVITE_RIVAL_INCREMENT_MS * Math.max(partySize - 1, 0);
       }
       console.log("Waiting " + (afterMs / 1000 / 60).toFixed(3) + " minutes before inviting quest");
       ScriptApp.newTrigger("invitePriorityQuest").timeBased().after(afterMs).create();

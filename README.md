@@ -52,17 +52,15 @@ BANNED_SCROLLS = [
 
 The script always invites the quest with the **lowest [quest completion percentage](#quest-completion-percentage)** among your eligible scrolls. This helps your party work towards completing all quests together, prioritizing quests that fewer party members have finished.
 
-The delay between the previous quest ending and the invite being sent is derived from that same percentage, so the least completed quests get invited soonest:
+The delay before the invite is sent depends on real contention for something more urgent, not on the selected quest's own completion percentage: `QUEST_INVITE_BASE_DELAY_MS` (10 seconds), plus `QUEST_INVITE_RIVAL_INCREMENT_MS` (15 seconds) for every other party member who owns an eligible scroll for a quest with a **lower** completion percentage than the one about to be invited.
 
-| Quest completion | Delay before invite |
-| ---------------- | ------------------- |
-| Below 25%        | Immediate           |
-| 25%              | ~4.75 minutes       |
-| 100%             | 10 minutes          |
+- If nobody else in the party holds anything more urgent, the invite goes out almost immediately (10 seconds).
+- Each party member who does hold a more urgent scroll adds 15 seconds, giving their own automation (or the member themselves) a window to send that invite first.
+- If you have no eligible quest scrolls at all, the script waits as if every other party member were a rival before giving up (and, if `PM_WHEN_OUT_OF_QUEST_SCROLLS` is `true`, messaging you that you're out of scrolls).
 
-Between 25% and 100%, the delay grows linearly from `QUEST_INVITE_MIN_DELAY_MS` (3 mins) to `QUEST_INVITE_MIN_DELAY_MS + QUEST_INVITE_MAX_DELAY_MS` (10 mins). If no eligible quest is found, the script waits the full 10 minutes before retrying.
+Since Habitica caps parties at 30 members, the delay can never exceed `10s + 15s × 29 ≈ 7.4 minutes`, even in the largest possible party.
 
-The delay gives all party members a chance to manually send invitations to their favorite quests, and prevents multiple party members from sending simultaneous quest invitations. Quests barely anyone has started are invited immediately, since they are the ones the party benefits most from running.
+The delay gives party members who hold a more urgent scroll a chance to send their own invite first, and prevents multiple party members from sending simultaneous quest invitations. Quests nobody else has anything more urgent for go out almost instantly, since there's no benefit to waiting.
 
 <details>
 <summary>A note on fairness</summary>

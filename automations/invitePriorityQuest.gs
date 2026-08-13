@@ -1,7 +1,7 @@
 /**
  * Chooses the quest scroll with lowest party completion percentage and invites party.
  * Respects AUTO_INVITE_* settings and BANNED_SCROLLS list.
- * Run 5-15 mins after quest completion via delayed trigger.
+ * Run via a delayed trigger after quest completion (see QUEST_INVITE_BASE_DELAY_MS/QUEST_INVITE_RIVAL_INCREMENT_MS).
  * 
  * @returns {void}
  * @throws {Error} Sends email notification and rethrows on failure
@@ -77,9 +77,86 @@ function invitePriorityQuest() {
 }
 
 /**
- * Selects the quest with the lowest party completion percentage.
- * 
- * @returns {Object} The selected quest or null if no quest is available
+ * Determines whether a quest scroll would be eligible for auto-invite selection under
+ * the current AUTO_INVITE_* settings and BANNED_SCROLLS list -- regardless of who owns it.
+ * Used both to filter the player's own scrolls and to check other party members' scrolls
+ * when counting rivals, so "eligible" always means "this script would actually invite it."
+ *
+ * @param {string} questKey - Quest content key
+ * @param {Object[]} questCompletionData - Precomputed party quest completion data (from getQuestCompletionData())
+ * @returns {boolean} True if a scroll for this quest could be auto-invited
+ */
+function isQuestScrollEligible(questKey, questCompletionData) {
+  let questContent = getContent().quests[questKey];
+  if (!questContent) {
+    // guards stale/removed quest keys that may appear in another member's inventory
+    return false;
+  }
+  let category = questContent.category;
+
+  let canInvite = !BANNED_SCROLLS.includes(questContent.text) &&
+    ((AUTO_INVITE_HOURGLASS_QUESTS === true && category === "timeTravelers") ||
+      (category != "timeTravelers" && (
+        (AUTO_INVITE_GOLD_QUESTS === true && typeof questContent.goldValue !== "undefined") ||
+        (AUTO_INVITE_UNLOCKABLE_QUESTS === true && category === "unlockable") ||
+        (AUTO_INVITE_PET_QUESTS === true && ["pet", "hatchingPotion"].includes(category)))));
+
+  if (canInvite && !AUTO_INVITE_FULLY_COMPLETED_QUESTS) {
+    let questCompletion = questCompletionData.find((q) => q.questKey === questKey);
+    // world bosses and special quests are omitted from completion data, so treat missing as eligible
+    canInvite = canInvite && (!questCompletion || questCompletion.completionPercentage < 100);
+  }
+
+  return canInvite;
+}
+
+/**
+ * Counts other party members who own at least one auto-invite-eligible quest scroll
+ * for a quest with a strictly lower completion percentage than the selected quest.
+ * Counts members, not scrolls: a member with several qualifying scrolls counts once.
+ *
+ * @param {Object} selectedQuest - The quest chosen by selectPriorityQuest() (needs .completionPercentage)
+ * @param {Object[]} questCompletionData - Precomputed party quest completion data
+ * @returns {number} Number of rival party members
+ */
+function countQuestRivals(selectedQuest, questCompletionData) {
+  let partyMembers = getMembers(); // already cached via getQuestCompletionData(), no extra fetch
+  if (typeof partyMembers === "undefined") {
+    return 0;
+  }
+
+  let rivals = 0;
+  for (let member of partyMembers) {
+    if (member._id === USER_ID) {
+      continue;
+    }
+    let quests = member.items && member.items.quests;
+    if (!quests) {
+      continue;
+    }
+
+    let isRival = Object.entries(quests).some(([questKey, numScrolls]) => {
+      if (numScrolls <= 0 || !isQuestScrollEligible(questKey, questCompletionData)) {
+        return false;
+      }
+      let questCompletion = questCompletionData.find((q) => q.questKey === questKey);
+      let completionPercentage = questCompletion ? questCompletion.completionPercentage : 0;
+      return completionPercentage < selectedQuest.completionPercentage;
+    });
+
+    if (isRival) {
+      rivals++;
+    }
+  }
+
+  return rivals;
+}
+
+/**
+ * Selects the quest with the lowest party completion percentage, and counts how many
+ * other party members hold an eligible scroll for a strictly more urgent quest.
+ *
+ * @returns {Object} The selected quest (with a `rivals` count) or null if no quest is available
  */
 function selectPriorityQuest() {
   // get quest completion data for the party
@@ -88,45 +165,15 @@ function selectPriorityQuest() {
   // for each quest scroll the player owns
   let availableQuests = [];
   for (let [questKey, numScrolls] of Object.entries(getUser().items.quests)) {
-    if (numScrolls > 0) {
-      let category = getContent().quests[questKey].category;
-
-      // if not excluded by settings
-      let canInvite = !BANNED_SCROLLS.includes(content.quests[questKey].text) &&
-        ((AUTO_INVITE_HOURGLASS_QUESTS === true && category === "timeTravelers") ||
-          (category != "timeTravelers" && (
-            (AUTO_INVITE_GOLD_QUESTS === true && typeof content.quests[questKey].goldValue !== "undefined") ||
-            (AUTO_INVITE_UNLOCKABLE_QUESTS === true && category === "unlockable") ||
-            (AUTO_INVITE_PET_QUESTS === true && ["pet", "hatchingPotion"].includes(category)))));
-      if (canInvite && !AUTO_INVITE_FULLY_COMPLETED_QUESTS) {
-        let questCompletion = questCompletionData.find((q) => q.questKey === questKey);
-        // world bosses and special quests are omitted from completion data, so treat missing as eligible
-        canInvite = canInvite && (!questCompletion || questCompletion.completionPercentage < 100);
-      }
-
-      if (canInvite) {
-        // find the quest in completion data
-        let questCompletion = questCompletionData.find(
-          (q) => q.questKey === questKey
-        );
-
-        if (questCompletion) {
-          availableQuests.push({
-            questKey: questKey,
-            numScrolls: numScrolls,
-            completionPercentage: questCompletion.completionPercentage,
-            questName: content.quests[questKey].text,
-          });
-        } else {
-          // quest not found in completion data (e.g., world boss), add with 0% completion
-          availableQuests.push({
-            questKey: questKey,
-            numScrolls: numScrolls,
-            completionPercentage: 0,
-            questName: content.quests[questKey].text,
-          });
-        }
-      }
+    if (numScrolls > 0 && isQuestScrollEligible(questKey, questCompletionData)) {
+      let questCompletion = questCompletionData.find((q) => q.questKey === questKey);
+      availableQuests.push({
+        questKey: questKey,
+        numScrolls: numScrolls,
+        // world bosses and special quests are omitted from completion data, treat missing as 0%
+        completionPercentage: questCompletion ? questCompletion.completionPercentage : 0,
+        questName: getContent().quests[questKey].text,
+      });
     }
   }
 
@@ -139,6 +186,7 @@ function selectPriorityQuest() {
 
     // select the quest with the lowest completion percentage
     let selectedQuest = availableQuests[0];
+    selectedQuest.rivals = countQuestRivals(selectedQuest, questCompletionData);
 
     return selectedQuest;
   }
