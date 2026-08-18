@@ -266,7 +266,7 @@ It is highly recommended that you use a desktop computer for this, as some of th
 There are two Automate Habitica+ script projects to choose from:
 
 - **[Stable](https://script.google.com/home/projects/14GDS_AQCgXyNK0-VEJlfhvIMI-h4GpnDnYm_3GNUxzOb-LG63NhhWtHi/)** — matches the latest [GitHub release](https://github.com/douglasrizzo/automate-habitica/releases). Recommended for most users.
-- **[Dev](https://script.google.com/d/1sipdo-zWZ_rymPSIZFWBCgf-U-_zEEyQwHBB9IUeSHCxpPTJHqnCLOIl/edit?usp=sharing)** — matches the `main` branch on GitHub, updated more frequently. May include fixes and features not in a release yet, but has seen less real-world testing. If something breaks, you can always follow [Updating the Script](#updating-the-script) to switch back to Stable.
+- **[Dev](https://script.google.com/d/1sipdo-zWZ_rymPSIZFWBCgf-U-_zEEyQwHBB9IUeSHCxpPTJHqnCLOIl)** — matches the `main` branch on GitHub, updated more frequently. May include fixes and features not in a release yet, but has seen less real-world testing. If something breaks, you can always follow [Updating the Script](#updating-the-script) to switch back to Stable.
 
 The steps below use the Stable link; substitute the Dev link in step 1 if you'd rather use that version.
 
